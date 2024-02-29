@@ -1,6 +1,4 @@
-# Day1
-
-## Running
+# 01
 
 ```bash
 cat input.txt | ./main.out
