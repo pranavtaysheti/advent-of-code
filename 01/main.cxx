@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <array>
 #include <vector>
 #include <utility>
@@ -19,18 +20,17 @@ const auto DIGIT_NAMES = std::array<std::string, 10>{
     "nine",
 };
 
-std::pair<int, int> parseStringNum(const std::string &s, int pos)
+std::pair<int, int> parseStringNum(const std::string_view s, int pos)
 {
     pos += 1;
     int i = 0;
+
     for (std::string n : DIGIT_NAMES)
     {
-        auto sub = std::string_view(s);
-
         int begin = std::max(pos - static_cast<int>(n.length()), 0);
         int len = pos - begin;
 
-        sub = sub.substr(begin, len);
+        auto sub = s.substr(begin, len);
 
         if (sub == n)
         {
@@ -65,17 +65,17 @@ int main(int argc, char const *argv[])
 
         for (int i = 0; i < l.length(); i += 1)
         {
-            auto pd = parseDigit(l[i]);
-            if (pd.second == 0)
+            const auto [pd_r, pd_err] = parseDigit(l[i]);
+            if (pd_err == 0)
             {
-                l_digits.push_back(pd.first);
+                l_digits.push_back(pd_r);
                 continue;
             }
 
-            auto psn = parseStringNum(l, i);
-            if (psn.second == 0)
+            const auto [psn_r, psn_err] = parseStringNum(l, i);
+            if (psn_err == 0)
             {
-                l_digits.push_back(psn.first);
+                l_digits.push_back(psn_r);
                 continue;
             }
         }
