@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <limits>
 
 constexpr int MAX_RED = 12;
 constexpr int MAX_GREEN = 13;
@@ -155,21 +156,45 @@ bool checkGame(const GameRecord &gr)
     return true;
 }
 
+GameRecordSubset getMinimumBalls(const GameRecord &gr)
+{
+    auto result = GameRecordSubset{0, 0, 0};
+
+    for (const auto &gsr : gr)
+    {
+        result.Red = std::max(gsr.Red, result.Red);
+        result.Green = std::max(gsr.Green, result.Green);
+        result.Blue = std::max(gsr.Blue, result.Blue);
+    }
+
+    return result;
+}
+
+int getPower(const GameRecordSubset &gsr)
+{
+    return (gsr.Red * gsr.Green * gsr.Blue);
+}
+
 int main(int argc, char const *argv[])
 {
-    int sum = 0;
+    int p1_sum = 0;
+    int p2_sum = 0;
     std::string l{};
 
     while (std::getline(std::cin, l))
     {
         const auto id = getGameID(l);
-        const auto grs = getGameRecord(l);
-        if (checkGame(grs))
+        const auto gr = getGameRecord(l);
+
+        if (checkGame(gr))
         {
-            sum += id;
+            p1_sum += id;
         }
+
+        p2_sum += getPower(getMinimumBalls(gr));
     }
 
-    std::cout << sum << '\n';
+    std::cout << "P1 :" << p1_sum << '\n';
+    std::cout << "P2 :" << p2_sum << '\n';
     return 0;
 }
