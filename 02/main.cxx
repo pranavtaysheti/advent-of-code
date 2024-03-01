@@ -194,7 +194,7 @@ int main(int argc, char const *argv[])
         p2_sum += getPower(getMinimumBalls(gr));
     }
 
-    std::cout << "P1 :" << p1_sum << '\n';
-    std::cout << "P2 :" << p2_sum << '\n';
+    std::cout << "P1: " << p1_sum << '\n';
+    std::cout << "P2: " << p2_sum << '\n';
     return 0;
 }
