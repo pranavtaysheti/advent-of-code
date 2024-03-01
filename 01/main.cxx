@@ -43,7 +43,7 @@ std::pair<int, int> parseStringNum(const std::string_view s, int pos)
     return {0, 1};
 }
 
-std::pair<int, int> parseDigit(const char &c)
+std::pair<int, int> parseDigit(const char c)
 {
     if (c >= '0' and c <= '9')
     {
@@ -56,12 +56,12 @@ std::pair<int, int> parseDigit(const char &c)
 int main(int argc, char const *argv[])
 {
     std::string l{};
-    int total_sum{};
+    int total_sum = 0;
 
     while (std::getline(std::cin, l))
     {
         auto l_digits = std::vector<int>{};
-        int l_sum{};
+        int l_sum = 0;
 
         for (int i = 0; i < l.length(); i += 1)
         {
