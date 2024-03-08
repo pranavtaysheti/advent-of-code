@@ -1,13 +1,9 @@
-from typing import NamedTuple, TypedDict
-
-
-class Card(NamedTuple):
-    winning_numbers: list[int]
-    numbers_have: list[int]
+from typing import TypedDict
 
 
 class CardBundle(TypedDict):
-    card: Card
+    winning_numbers: list[int]
+    numbers_have: list[int]
     qty: int
 
 
@@ -15,9 +11,9 @@ def get_numbers(s: str) -> list[int]:
     return [int(n) for n in s.split()]
 
 
-def winner_num(card: Card) -> int:
-    wns, nhs = card
-    return len(set(wns) & set(nhs))
+def winner_num(card: CardBundle) -> int:
+    wns, nhs, _qty = card.values()
+    return len(set(wns) & set(nhs))  # type: ignore
 
 
 def calculate_score(n: int) -> int:
@@ -34,16 +30,14 @@ with open("input.txt", "r") as input_file:
     for card_str in input_file:
         card_set.append(
             {
-                "card": Card(
-                    winning_numbers=get_numbers(card_str[10:40]),
-                    numbers_have=get_numbers(card_str[42:-1]),
-                ),
+                "winning_numbers": get_numbers(card_str[10:40]),
+                "numbers_have": get_numbers(card_str[42:-1]),
                 "qty": 1,
             }
         )
 
 for i, card_bundle in enumerate(card_set):
-    no_winners = winner_num(card_bundle["card"])
+    no_winners = winner_num(card_bundle)
     sum_p1 += calculate_score(no_winners)
 
     for k in range(no_winners):
