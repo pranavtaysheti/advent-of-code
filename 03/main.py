@@ -10,16 +10,18 @@ BUFFER_LINE = [FILLER_CHAR] * 140
 GEAR_CHAR = "*"
 
 
-class FoundDigit(NamedTuple):
+class CharPos(NamedTuple):
     pos: int
-    digit: str
+    char: str
 
 
 def calculate_num(l: list[str]) -> int:
     return int("".join(l))
 
 
-def get_surrounding_chars(b: int, e: int, sec: list[list[str]]) -> list[str]:
+def get_surrounding_chars(pos: list[int], sec: list[list[str]]) -> list[str]:
+    b, e = pos[0], pos[-1]
+
     return [
         *sec[0][b - 1 : e + 2],
         sec[1][b - 1],
@@ -32,17 +34,13 @@ def check_num(s: list[str]) -> bool:
     return any([False if c == "." else True for c in s])
 
 
-def get_num(s: list[str]) -> Generator[list[FoundDigit], Never, None]:
-    curr = [*enumerate(s)]
-
-    def check_decimal(item: tuple[int, str]):
-        i, c = item
-        return c.isdecimal()
+def get_num(s: list[str]) -> Generator[list[CharPos], Never, None]:
+    curr = [CharPos(*n) for n in enumerate(s)]
 
     while len(curr) > 0:
-        curr = [*dropwhile(lambda e: not check_decimal(e), curr)]
-        nums = [*takewhile(check_decimal, curr)]
-        yield [FoundDigit(*n) for n in nums]
+        curr = [*dropwhile(lambda n: not n.char.isdecimal(), curr)]
+        nums = [*takewhile(lambda n: n.char.isdecimal(), curr)]
+        yield nums
         curr = curr[len(nums) :]
 
 
@@ -56,7 +54,7 @@ with open(INPUT_FILE, "r") as file:
         BUFFER_LINE,
     ]
 
-for l, s in enumerate((input[i - 1 : i + 2] for i in range(1, len(input) - 1))):
+for s in (input[i - 1 : i + 2] for i in range(1, len(input) - 1)):
     nums_s = [[*get_num(s[i])] for i in range(3)]
 
     # P1
@@ -65,11 +63,9 @@ for l, s in enumerate((input[i - 1 : i + 2] for i in range(1, len(input) - 1))):
             continue
 
         pos = [e.pos for e in n]
-        digits = [e.digit for e in n]
+        digits = [e.char for e in n]
 
-        b, e = pos[0], pos[-1]
-
-        if check_num(get_surrounding_chars(b, e, s)):
+        if check_num(get_surrounding_chars(pos, s)):
             p1_sum += calculate_num(digits)
 
     # P2
@@ -77,14 +73,13 @@ for l, s in enumerate((input[i - 1 : i + 2] for i in range(1, len(input) - 1))):
     for gear_pos in gears_pos:
         nums_flat = chain.from_iterable(nums_s)
         surr_nums: list[int] = []
-        surr_num_pos = [p for p in range(gear_pos - 1, gear_pos + 2)]
 
         for num in nums_flat:
             pos = [n.pos for n in num]
-            digits = [n.digit for n in num]
+            digits = [n.char for n in num]
 
             for p in pos:
-                if p in surr_num_pos:
+                if p in range(gear_pos - 1, gear_pos + 2):
                     surr_nums.append(calculate_num(digits))
                     break
 
