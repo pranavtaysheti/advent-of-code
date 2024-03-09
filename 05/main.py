@@ -59,9 +59,6 @@ def solve_map(seeds: Iterable[int]):
 
 
 master_map: dict[MapLayout, list[MapItem]] = {}
-seeds: list[int]
-curr_maplayout: MapLayout
-locations: list[int] = []
 
 with open("input.txt", "r") as input_file:
     seeds = [int(s) for s in next(input_file)[7:].split()]
