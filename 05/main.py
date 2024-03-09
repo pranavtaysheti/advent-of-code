@@ -80,12 +80,7 @@ with open("input.txt", "r") as input_file:
 
 
 p1_sol = min(solve_map(seeds))
-
-p2_res: list[int] = []
-for seed_start, length in pairwise(seeds):
-    p2_res.append(min(solve_map((range(seed_start, seed_start + length)))))
-
-p2_sol = min(p2_res)
+p2_sol = 0
 
 print(f"P1: {p1_sol}")
 print(f"P2: {p2_sol}")
