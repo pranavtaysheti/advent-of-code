@@ -4,5 +4,9 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"editor.defaultFormatter": "ms-python.black-formatter",
+		"python.analysis.typeCheckingMode": "standard",
+		"python.languageServer": "Pylance"
+	}
 }
