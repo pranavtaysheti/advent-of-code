@@ -26,10 +26,6 @@ def mi_range(mi: MapItem) -> MapItemRange:
     return MapItemRange(mir(mi.of_start), mir(mi.to_start))
 
 
-def is_maptitle(s: str) -> bool:
-    return True if s[-2] == ":" else False
-
-
 def parse_maplayout(s: str) -> MapLayout:
     r, _postfix = s.split()
     of, _a, to = r.split("-")
@@ -88,7 +84,7 @@ with open("input.txt", "r") as input_file:
         if len(l) <= 1:
             continue
 
-        if is_maptitle(l):
+        if l[-2] == ":":
             master_map.append([])
             continue
 
