@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Self
 from itertools import pairwise
 from collections.abc import Iterable, Callable
 from pprint import pprint
@@ -20,6 +20,21 @@ class MapItemRange(NamedTuple):
     to_range: tuple[int, int]
 
 
+class _MapItemTreeRootFactory:
+    pass
+
+
+MAPITEM_TREE_ROOT = _MapItemTreeRootFactory()
+
+
+class MapItemTree(NamedTuple):
+    Node: MapItem | _MapItemTreeRootFactory
+    Branches: list[Self]
+
+
+type MasterMap = list[list[MapItem]]
+
+
 def mi_range(mi: MapItem) -> MapItemRange:
     max_: Callable[[int], int] = lambda n: n + mi.range_ - 1
     mir: Callable[[int], tuple[int, int]] = lambda n: (n, max_(n))
@@ -32,10 +47,6 @@ def parse_maplayout(s: str) -> MapLayout:
     return MapLayout(of, to)
 
 
-def parse_mapitem(s: str) -> MapItem:
-    return MapItem(*(int(n) for n in s.split()))
-
-
 def get_next_value(v: int, next_map: list[MapItem]) -> int:
     for k in next_map:
         k_of_min, k_of_max = mi_range(k).of_range
@@ -46,7 +57,7 @@ def get_next_value(v: int, next_map: list[MapItem]) -> int:
     return v
 
 
-def solve_map(m: list[list[MapItem]], seed: int):
+def solve_map(m: MasterMap, seed: int):
     s = seed
     for next_mapping in m:
         s = get_next_value(s, next_mapping)
@@ -75,7 +86,16 @@ def next_mapitems(pn: MapItem, nl: list[MapItem]) -> list[MapItem]:
     return result
 
 
-master_map: list[list[MapItem]] = []
+def make_tree(node: MapItem, m: MasterMap) -> MapItemTree:
+    tree = MapItemTree(node, [])
+
+    for mi in m[0]:
+        ...
+
+    return tree
+
+
+master_map: MasterMap = []
 
 with open("input.txt", "r") as input_file:
     seeds = [int(s) for s in next(input_file)[7:].split()]
@@ -88,7 +108,9 @@ with open("input.txt", "r") as input_file:
             master_map.append([])
             continue
 
-        master_map[-1].append(parse_mapitem(l))
+        master_map[-1].append(MapItem(*(int(n) for n in l.split())))
+
+ml_tree = MapItemTree(MAPITEM_TREE_ROOT, [])
 
 p1_sol = min((solve_map(master_map, s) for s in seeds))
 p2_sol = 0
