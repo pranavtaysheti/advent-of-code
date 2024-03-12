@@ -1,6 +1,6 @@
-from typing import NamedTuple, Self
-from itertools import pairwise
-from collections.abc import Iterable, Callable
+from typing import NamedTuple
+from itertools import batched
+from collections.abc import Callable
 from pprint import pprint
 
 
@@ -20,100 +20,139 @@ class MapItemRange(NamedTuple):
     to_range: tuple[int, int]
 
 
-class _MapItemTreeRootFactory:
-    pass
-
-
-MAPITEM_TREE_ROOT = _MapItemTreeRootFactory()
-
-
-class MapItemTree(NamedTuple):
-    Node: MapItem | _MapItemTreeRootFactory
-    Branches: list[Self]
-
+type Range = tuple[int, int]
 
 type MasterMap = list[list[MapItem]]
+_master_map: MasterMap = []
+
+
+def add_layer_mastermap() -> None:
+    _master_map.append([])
+
+    if len(_master_map) == 1:
+        return
+
+    _master_map[-2].sort(key=lambda mi: mi.of_start)
+
+
+def add_item_mastermap(mil: MapItem):
+    _master_map[-1].append(mil)
+
+
+def get_mastermap() -> MasterMap:
+    return _master_map
+
+
+def calc_max(n: tuple[int, int]) -> int:
+    min_, range_ = n
+    return min_ + range_ - 1
 
 
 def mi_range(mi: MapItem) -> MapItemRange:
-    max_: Callable[[int], int] = lambda n: n + mi.range_ - 1
-    mir: Callable[[int], tuple[int, int]] = lambda n: (n, max_(n))
+    mir: Callable[[int], tuple[int, int]] = lambda n: (n, calc_max((n, mi.range_)))
     return MapItemRange(mir(mi.of_start), mir(mi.to_start))
 
 
-def parse_maplayout(s: str) -> MapLayout:
-    r, _postfix = s.split()
-    of, _a, to = r.split("-")
-    return MapLayout(of, to)
+def mi_next_value(v: int, mi: MapItem) -> int | None:
+    mi_of_min, mi_of_max = mi_range(mi).of_range
+    if mi_of_min <= v <= mi_of_max:
+        mi_to_min, _mi_to_max = mi_range(mi).to_range
+        return mi_to_min + (v - mi_of_min)
+    return None
 
 
-def get_next_value(v: int, next_map: list[MapItem]) -> int:
-    for k in next_map:
-        k_of_min, k_of_max = mi_range(k).of_range
-        if k_of_min <= v <= k_of_max:
-            k_to_min, _k_to_max = mi_range(k).to_range
-            return k_to_min + (v - k_of_min)
-
+def mil_next_value(v: int, next_map: list[MapItem]) -> int:
+    for mi in next_map:
+        if (r := mi_next_value(v, mi)) is not None:
+            return r
     return v
 
 
-def solve_map(m: MasterMap, seed: int):
+def solve_detached(seed: int):
     s = seed
-    for next_mapping in m:
-        s = get_next_value(s, next_mapping)
+    for next_mapping in get_mastermap():
+        s = mil_next_value(s, next_mapping)
 
     return s
 
 
-def common_range(p: MapItem, n: MapItem) -> tuple[int, int] | None:
-    p_min, p_max = mi_range(p).of_range
-    n_min, n_max = mi_range(n).to_range
+def mi_next_range(pr: Range, mi: MapItem) -> Range:
+    p_min, p_max = pr
+    mi_of_min, mi_of_max = mi_range(mi).of_range
+    c_min, c_max = max(p_min, mi_of_min), min(p_max, mi_of_max)
 
-    if (c_min := max(p_min, n_min)) < (c_max := min(p_max, n_max)):
-        return c_min, c_max
+    if (n_min := mi_next_value(c_min, mi)) is not None and (
+        n_max := mi_next_value(c_max, mi)
+    ) is not None:
+        return n_min, n_max
+    else:
+        raise Exception("mi_next_value returned None. Should not happen!!")
 
-    return None
 
+def _mil_next_ranges(p: Range, mil: list[MapItem]) -> list[Range]:
+    p_min, p_max = p
+    result: list[tuple[int, int]] = []
 
-def next_mapitems(pn: MapItem, nl: list[MapItem]) -> list[MapItem]:
-    result: list[MapItem] = []
+    for mi in mil:
+        mi_of_min, mi_of_max = mi_range(mi).of_range
 
-    for mi in nl:
-        if common_range(pn, mi):
-            result.append(mi)
+        if mi_of_min > p_max:  # PROBLEM
+            break
 
-    pprint(f"NEXT_MIS: {result}")
+        if (c_min := max(p_min, mi_of_min)) < (c_max := min(p_max, mi_of_max)):
+            if c_min > p_min:
+                result.append((p_min, c_min - 1))
+            if (n_range := mi_next_range((c_min, c_max), mi)) is not None:
+                result.append(n_range)
+            else:
+                raise Exception("RETURNED NONE! should not happen!!!")
+            p_min = c_max + 1
+
+    if p_min < p_max:
+        result.append((p_min, p_max))
+
     return result
 
 
-def make_tree(node: MapItem, m: MasterMap) -> MapItemTree:
-    tree = MapItemTree(node, [])
+def solve_range(n: Range) -> list[Range]:
+    curr_ranges: list[Range] = [n]
+    next_ranges: list[Range] = []
 
-    for mi in m[0]:
-        ...
+    for i, layer in enumerate(get_mastermap()):
+        for r in curr_ranges:
+            next_ranges.extend(_mil_next_ranges(r, layer))
+        curr_ranges = next_ranges
+        next_ranges = []
 
-    return tree
+    return curr_ranges
 
 
-master_map: MasterMap = []
+if __name__ == "__main__":
+    with open("input.txt", "r") as input_file:
+        seeds = [int(s) for s in next(input_file)[7:].split()]
 
-with open("input.txt", "r") as input_file:
-    seeds = [int(s) for s in next(input_file)[7:].split()]
+        for l in input_file:
+            if len(l) <= 1:
+                continue
 
-    for l in input_file:
-        if len(l) <= 1:
-            continue
+            if l[-2] == ":":
+                add_layer_mastermap()
+                continue
 
-        if l[-2] == ":":
-            master_map.append([])
-            continue
+            add_item_mastermap(MapItem(*(int(n) for n in l.split())))
 
-        master_map[-1].append(MapItem(*(int(n) for n in l.split())))
+    add_layer_mastermap()
+    get_mastermap().pop()
 
-ml_tree = MapItemTree(MAPITEM_TREE_ROOT, [])
+    p1_sol = min(solve_detached(s) for s in seeds)
 
-p1_sol = min((solve_map(master_map, s) for s in seeds))
-p2_sol = 0
+    seeds_ranged = ((low, calc_max((low, range_))) for low, range_ in batched(seeds, 2))
+    seeds_ranged_result: list[int] = []
+    for seed_low, seed_high in seeds_ranged:
+        seeds_ranged_result.append(
+            min(r[0] for r in solve_range((seed_low, seed_high)))
+        )
+    p2_sol = min(seeds_ranged_result)
 
-print(f"P1: {p1_sol}")
-print(f"P2: {p2_sol}")
+    print(f"P1: {p1_sol}")
+    print(f"P2: {p2_sol}")
