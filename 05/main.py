@@ -1,7 +1,6 @@
 from typing import NamedTuple
 from itertools import batched
 from collections.abc import Callable
-from pprint import pprint
 
 
 class MapLayout(NamedTuple):
