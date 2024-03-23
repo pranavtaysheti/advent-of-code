@@ -59,8 +59,6 @@ def ordered_handbids(type_classified: dict[int, list[HandBid]], cards: list[str]
 
 
 def solve(hand_bids: Iterable[HandBid]) -> int:
-    # __import__('pprint').pprint([*hand_bids])
-    # print("--------")
     return sum(
         (i + 1) * bid for i, bid in enumerate(hand_bid.bid for hand_bid in hand_bids)
     )
