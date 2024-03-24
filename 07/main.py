@@ -64,12 +64,8 @@ def solve(hand_bids: Iterable[HandBid]) -> int:
     )
 
 def main():
-    input: list[HandBid] = []
-
     with open("input.txt") as input_file:
-        for line in input_file:
-            hand, bid = line.split()
-            input.append(HandBid(hand, int(bid)))
+        input = [HandBid(hand, int(bid)) for hand, bid in (line.split() for line in input_file)]
 
     p1_sol = solve(ordered_handbids(type_classify(input), CARDS))
     p2_sol = solve(
