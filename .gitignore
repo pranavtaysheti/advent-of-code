@@ -60,3 +60,4 @@ _deps
 *.vsix
 
 __pycache__/
+main
