@@ -113,19 +113,9 @@ def trace_path(direction: Direction) -> int:
     count: int = 0
 
     while (curr := data[curr_pos.row][curr_pos.column]) != PipeType.Starting:
-        if curr == PipeType.Nothing:
-            raise NonContinuousPipeError
-
-        try:
-            curr_direction = get_next_direction(curr, curr_direction)
-        except NonContinuousPipeError:
-            print(curr)
-            print(curr_direction)
-            print(count)
-            raise
-        else:
-            curr_pos = get_next_pos(curr_pos, curr_direction)
-            count += 1
+        curr_direction = get_next_direction(curr, curr_direction)
+        curr_pos = get_next_pos(curr_pos, curr_direction)
+        count += 1
 
     return count
 
