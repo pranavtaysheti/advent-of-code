@@ -171,9 +171,7 @@ def area_row(ncl: list[PipeColumn]) -> int | NoReturn:
 
         return False
 
-    row = make_row(ncl)
-    res = [isbounded(p) for p in row]
-    return res.count(True)
+    return [isbounded(p) for p in make_row(ncl)].count(True)
 
 
 def area_loop(ln: list[PipeCoordinate]) -> int:
