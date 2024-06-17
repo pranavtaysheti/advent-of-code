@@ -1,6 +1,6 @@
 import fileinput
 from enum import Enum, auto
-from itertools import groupby, pairwise
+from itertools import groupby
 from math import ceil
 from re import T
 from typing import NamedTuple, NoReturn
