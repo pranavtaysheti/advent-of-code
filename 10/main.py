@@ -1,27 +1,18 @@
 import fileinput
-from enum import Enum, StrEnum, auto
+from enum import Enum, auto
+from itertools import groupby, pairwise
 from math import ceil
-from typing import NamedTuple
+from re import T
+from typing import NamedTuple, NoReturn
 
 
-class NonContinuousPipeError(Exception):
+class NonContinuousPipeError(ValueError):
     pass
 
 
 class Coordinate(NamedTuple):
     row: int
     column: int
-
-
-class PipeType(StrEnum):
-    Nothing = "."
-    NorthSouth = "|"
-    EastWest = "-"
-    NorthEast = "L"
-    NorthWest = "J"
-    SouthEast = "F"
-    SouthWest = "7"
-    Starting = "S"
 
 
 class Direction(Enum):
@@ -31,52 +22,96 @@ class Direction(Enum):
     West = auto()
 
 
-data: list[list[PipeType]] = []
-step_count: dict[Direction, int]
+class Pipe(NamedTuple):
+    ends: tuple[Direction, Direction] | None
 
 
-def parse_input(input: fileinput.FileInput[str]):
+class StartPipe(Pipe):
+    pass
+
+
+PIPETYPE: dict[str, Pipe] = {
+    "|": Pipe((Direction.North, Direction.South)),
+    "-": Pipe((Direction.East, Direction.West)),
+    "F": Pipe((Direction.South, Direction.East)),
+    "7": Pipe((Direction.South, Direction.West)),
+    "L": Pipe((Direction.North, Direction.East)),
+    "J": Pipe((Direction.North, Direction.West)),
+    ".": Pipe(None),
+    "S": StartPipe(None),
+}
+
+OPP_DIRECTION: dict[Direction, Direction] = {
+    Direction.North: Direction.South,
+    Direction.East: Direction.West,
+    Direction.West: Direction.East,
+    Direction.South: Direction.North,
+}
+
+
+class PipeCoordinate(NamedTuple):
+    pipe: Pipe
+    coordinate: Coordinate
+
+
+class PipeColumn(NamedTuple):
+    pipe: Pipe
+    column: int
+
+
+type Data = list[list[Pipe]]
+type GroupedLoop = dict[int, list[PipeColumn]]
+
+data: Data
+
+
+def parse_input(input: fileinput.FileInput[str]) -> Data:
+    result = []
     for line in input:
-        data.append([PipeType(c) for c in line[:-1]])
+        result.append([PIPETYPE[c] for c in line[:-1]])
+
+    return result
 
 
 def get_start_pos() -> Coordinate:
     for row, l in enumerate(data):
         for column, c in enumerate(l):
-            if c == PipeType.Starting:
+            if isinstance(c, StartPipe):
                 return Coordinate(row, column)
 
-    raise AssertionError("PipeType.Starting not found in data")
+    raise ValueError("StartPipe not found in data")
 
 
-def get_next_direction(node: PipeType, direction: Direction) -> Direction:
+def get_next_direction(PipeCoordinate: Pipe, direction: Direction) -> Direction:
+    if PipeCoordinate.ends is None:
+        raise NonContinuousPipeError
 
-    match (node, direction):
-        case (PipeType.EastWest, Direction.West | Direction.East):
-            return direction
-        case (PipeType.NorthSouth, Direction.North | Direction.South):
-            return direction
-        case (PipeType.NorthEast, Direction.South):
-            return Direction.East
-        case (PipeType.NorthEast, Direction.West):
-            return Direction.North
-        case (PipeType.NorthWest, Direction.East):
-            return Direction.North
-        case (PipeType.NorthWest, Direction.South):
-            return Direction.West
-        case (PipeType.SouthEast, Direction.North):
-            return Direction.East
-        case (PipeType.SouthEast, Direction.West):
-            return Direction.South
-        case (PipeType.SouthWest, Direction.North):
-            return Direction.West
-        case (PipeType.SouthWest, Direction.East):
-            return Direction.South
-        case _:
-            raise NonContinuousPipeError
+    d1, d2 = PipeCoordinate.ends
+
+    if OPP_DIRECTION[d1] == direction:
+        return d2
+    if OPP_DIRECTION[d2] == direction:
+        return d1
+
+    raise NonContinuousPipeError
 
 
-def get_start_direction() -> Direction | None:
+def get_starting_pipe(end: Direction, start: Direction) -> Pipe:
+    for pt in PIPETYPE.values():
+        try:
+            res = get_next_direction(pt, end)
+        except NonContinuousPipeError:
+            continue
+        else:
+            if res == start:
+                return pt
+
+            continue
+
+    raise NonContinuousPipeError
+
+
+def get_start_direction() -> Direction:
     start_pos = get_start_pos()
 
     for direction in Direction:
@@ -90,7 +125,64 @@ def get_start_direction() -> Direction | None:
         else:
             return direction
 
-    return None
+    raise NonContinuousPipeError
+
+
+def group_coordinates(lc: list[PipeCoordinate]) -> GroupedLoop:
+    gc = groupby(sorted(lc, key=lambda x: x.coordinate), lambda x: x.coordinate.row)
+    return {k: [*(PipeColumn(p, c.column) for p, c in v)] for k, v in gc}
+
+
+def make_row(ncl: list[PipeColumn]) -> list[Pipe]:
+    res: list[Pipe] = [PIPETYPE["."] for _ in range(len(data[0]))]
+    for p, c in ncl:
+        res[c] = p
+
+    return res
+
+
+def area_row(ncl: list[PipeColumn]) -> int | NoReturn:
+    vertical: int = 0
+    corner: Pipe | None = None
+
+    corners_vertical: dict[tuple[Pipe, Pipe], bool] = {
+        (PIPETYPE["F"], PIPETYPE["7"]): False,
+        (PIPETYPE["F"], PIPETYPE["J"]): True,
+        (PIPETYPE["L"], PIPETYPE["J"]): False,
+        (PIPETYPE["L"], PIPETYPE["7"]): True,
+    }
+
+    def isbounded(p: Pipe) -> bool:
+        nonlocal vertical, corner
+
+        if p == PIPETYPE["."]:
+            return bool(vertical % 2)
+
+        if p == PIPETYPE["|"]:
+            vertical += 1
+
+        if p in [PIPETYPE["7"], PIPETYPE["F"], PIPETYPE["J"], PIPETYPE["L"]]:
+            if corner is None:
+                corner = p
+
+            else:
+                vertical += corners_vertical[(corner, p)]
+                corner = None
+
+        return False
+
+    row = make_row(ncl)
+    res = [isbounded(p) for p in row]
+    return res.count(True)
+
+
+def area_loop(ln: list[PipeCoordinate]) -> int:
+    area: int = 0
+
+    for v in group_coordinates(ln).values():
+        area += area_row(v)
+
+    return area
 
 
 def get_next_pos(pos: Coordinate, direction: Direction) -> Coordinate:
@@ -107,25 +199,32 @@ def get_next_pos(pos: Coordinate, direction: Direction) -> Coordinate:
             return Coordinate(start_row, start_column - 1)
 
 
-def trace_path(direction: Direction) -> int:
+def trace_path(direction: Direction) -> list[PipeCoordinate]:
     curr_pos = get_next_pos(get_start_pos(), direction)
-    curr_direction = direction
-    count: int = 0
+    start_direction = curr_direction = direction
+    path: list[PipeCoordinate] = []
 
-    while (curr := data[curr_pos.row][curr_pos.column]) != PipeType.Starting:
+    while not isinstance((curr := data[curr_pos.row][curr_pos.column]), StartPipe):
+        path.append(PipeCoordinate(curr, curr_pos))
+
         curr_direction = get_next_direction(curr, curr_direction)
         curr_pos = get_next_pos(curr_pos, curr_direction)
-        count += 1
 
-    return count
+    path.append(
+        PipeCoordinate(get_starting_pipe(curr_direction, start_direction), curr_pos)
+    )
+    return path
 
 
 def main():
-    with fileinput.input(encoding="utf-8") as file:
-        parse_input(file)
+    global data
 
-    P1 = ceil(trace_path(Direction.East) / 2)
-    P2 = 0
+    with fileinput.input(encoding="utf-8") as file:
+        data = parse_input(file)
+
+    loop = trace_path(get_start_direction())
+    P1 = ceil(len(loop) / 2)
+    P2 = area_loop(loop)
 
     print(f"P1: {P1}")
     print(f"P2: {P2}")
