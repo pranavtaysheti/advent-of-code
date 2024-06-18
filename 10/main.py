@@ -2,7 +2,6 @@ import fileinput
 from enum import Enum, auto
 from itertools import groupby
 from math import ceil
-from re import T
 from typing import NamedTuple, NoReturn
 
 
@@ -60,7 +59,6 @@ class PipeColumn(NamedTuple):
 
 
 type Data = list[list[Pipe]]
-type GroupedLoop = dict[int, list[PipeColumn]]
 
 data: Data
 
@@ -128,8 +126,39 @@ def get_start_direction() -> Direction:
     raise NonContinuousPipeError
 
 
-def group_coordinates(lc: list[PipeCoordinate]) -> GroupedLoop:
-    gc = groupby(sorted(lc, key=lambda x: x.coordinate), lambda x: x.coordinate.row)
+def get_next_pos(pos: Coordinate, direction: Direction) -> Coordinate:
+    start_row, start_column = pos
+
+    match direction:
+        case Direction.North:
+            return Coordinate(start_row - 1, start_column)
+        case Direction.South:
+            return Coordinate(start_row + 1, start_column)
+        case Direction.East:
+            return Coordinate(start_row, start_column + 1)
+        case Direction.West:
+            return Coordinate(start_row, start_column - 1)
+
+
+def trace_path(start_pos: Coordinate, direction: Direction) -> list[PipeCoordinate]:
+    curr_pos = get_next_pos(start_pos, direction)
+    start_direction = curr_direction = direction
+    path: list[PipeCoordinate] = []
+
+    while not isinstance((curr := data[curr_pos.row][curr_pos.column]), StartPipe):
+        path.append(PipeCoordinate(curr, curr_pos))
+
+        curr_direction = get_next_direction(curr, curr_direction)
+        curr_pos = get_next_pos(curr_pos, curr_direction)
+
+    path.append(
+        PipeCoordinate(get_starting_pipe(curr_direction, start_direction), curr_pos)
+    )
+    return path
+
+
+def group_coordinates(lc: list[PipeCoordinate]) -> dict[int, list[PipeColumn]]:
+    gc = groupby(sorted(lc, key=lambda x: x.coordinate), key=lambda x: x.coordinate.row)
     return {k: [*(PipeColumn(p, c.column) for p, c in v)] for k, v in gc}
 
 
@@ -183,44 +212,13 @@ def area_loop(ln: list[PipeCoordinate]) -> int:
     return area
 
 
-def get_next_pos(pos: Coordinate, direction: Direction) -> Coordinate:
-    start_row, start_column = pos
-
-    match direction:
-        case Direction.North:
-            return Coordinate(start_row - 1, start_column)
-        case Direction.South:
-            return Coordinate(start_row + 1, start_column)
-        case Direction.East:
-            return Coordinate(start_row, start_column + 1)
-        case Direction.West:
-            return Coordinate(start_row, start_column - 1)
-
-
-def trace_path(direction: Direction) -> list[PipeCoordinate]:
-    curr_pos = get_next_pos(get_start_pos(), direction)
-    start_direction = curr_direction = direction
-    path: list[PipeCoordinate] = []
-
-    while not isinstance((curr := data[curr_pos.row][curr_pos.column]), StartPipe):
-        path.append(PipeCoordinate(curr, curr_pos))
-
-        curr_direction = get_next_direction(curr, curr_direction)
-        curr_pos = get_next_pos(curr_pos, curr_direction)
-
-    path.append(
-        PipeCoordinate(get_starting_pipe(curr_direction, start_direction), curr_pos)
-    )
-    return path
-
-
 def main():
     global data
 
     with fileinput.input(encoding="utf-8") as file:
         data = parse_input(file)
 
-    loop = trace_path(get_start_direction())
+    loop = trace_path(get_start_pos(), get_start_direction())
     P1 = ceil(len(loop) / 2)
     P2 = area_loop(loop)
 
