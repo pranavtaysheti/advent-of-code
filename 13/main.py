@@ -74,7 +74,7 @@ def analyze(terrain: Terrain) -> TerrainData:
         selectors = [c1 != c2 for c1, c2 in zip(r1, r2)]
         return [*compress([i for i in range(len(r1))], selectors)]
 
-    def reflection(terrain: Terrain, i: int) -> ReflectionType | None:
+    def line(terrain: Terrain, i: int) -> ReflectionType | None:
         left: Terrain = terrain[: i + 1]
         right: Terrain = terrain[i + 1 :]
         width = min(len(left), len(right))
@@ -95,9 +95,9 @@ def analyze(terrain: Terrain) -> TerrainData:
 
     def orientation(terrain: Terrain) -> list[Reflection]:
         res: list[Reflection] = []
-        reflection_co = partial(reflection, terrain)
+        line_co = partial(line, terrain)
         for i in range(len(terrain) - 1):
-            if (reflection_type := reflection_co(i)) is not None:
+            if (reflection_type := line_co(i)) is not None:
                 res.append(Reflection(reflection_type, i + 1))
 
         return res
