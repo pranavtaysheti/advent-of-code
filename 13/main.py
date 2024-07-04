@@ -1,7 +1,7 @@
 import fileinput
 from enum import Enum, StrEnum, auto
 from functools import partial
-from itertools import compress, pairwise
+from itertools import compress
 from typing import NamedTuple
 
 
