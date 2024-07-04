@@ -52,7 +52,6 @@ def parse_input(input_file: fileinput.FileInput[str]):
 
 def summarize(terrain: Terrain, type_: ReflectionType) -> int:
     terrain_data = analyze(terrain)
-    # print(terrain_data)
     res: int = 0
 
     def check(type_: ReflectionType, data: list[Reflection]) -> int:
