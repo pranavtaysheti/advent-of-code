@@ -1,27 +1,19 @@
+import enum
 import fileinput
 from collections import Counter
 from collections.abc import Iterator
-from enum import Enum, StrEnum, auto
-from typing import Iterable
+from enum import StrEnum
+from typing import Iterable, Literal, NamedTuple
 
-TOTAL_CYCLES = 1_000_000_000
+type Direction = Literal["clockwise"] | Literal["anti-clockwise"]
+type Data = list[list[Rock]]
+type DataIter = Iterator[list[Rock]]
 
 
 class Rock(StrEnum):
     EMPTY_SPACE = "."
     ROUND = "O"
     CUBE = "#"
-
-
-class Direction(Enum):
-    NORTH = auto()
-    WEST = auto()
-    SOUTH = auto()
-    EAST = auto()
-
-
-type Data = list[list[Rock]]
-data: Data
 
 
 def parse_input(input: fileinput.FileInput[str]) -> Data:
@@ -32,60 +24,93 @@ def parse_input(input: fileinput.FileInput[str]) -> Data:
     return res
 
 
-def data_iter(direction: Direction) -> Iterator[list[Rock]]:
-    column_range = range(len(data[0]))
-
-    def columns_iter(num_iter: Iterable[int]):
-        return ([row[col] for row in data] for col in num_iter)
-
-    match direction:
-        case Direction.NORTH:
-            return columns_iter(column_range)
-        case Direction.WEST:
-            return iter(data)
-        case Direction.SOUTH:
-            return columns_iter(reversed(column_range))
-        case Direction.EAST:
-            return reversed(data)
+def rotate_anticlockwise(data: Data) -> Data:
+    return [[row[col] for row in data] for col in reversed(range(len(data)))]
 
 
-def spin(data: Data) -> Data: ...
+def rotate_clockwise(data: Data) -> Data:
+    return [[row[col] for row in reversed(data)] for col in range(len(data))]
 
 
-def roll_north(line: list[Rock]) -> list[int]:
-    def contains_round(low: int, high: int) -> int:
-        return Counter(line[low + 1 : high])[Rock.ROUND]
+def tilt_platform(data_iter: Data) -> Data:
+    def roll_line(line: list[Rock]) -> list[Rock]:
+        res: list[Rock] = [Rock.EMPTY_SPACE for _ in range(len(line))]
+        cubes_pos = [i for i, r in enumerate(line) if r == Rock.CUBE]
 
-    def roll(low: int, high: int) -> list[int]:
-        count = contains_round(low, high)
-        return [low + 1 + i for i in range(count)]
+        def roll(low: int, high: int) -> list[int]:
+            count = Counter(line[low + 1 : high])[Rock.ROUND]
+            return [low + 1 + i for i in range(count)]
 
-    cubes_pos = [i for i, r in enumerate(line) if r == Rock.CUBE]
+        def write_res(type_: Rock, pos: list[int]):
+            for i in pos:
+                res[i] = type_
 
-    res: list[int] = []
-    curr = -1
+        write_res(Rock.CUBE, cubes_pos)
 
-    for pos in cubes_pos:
-        res.extend(roll(curr, pos))
-        curr = pos
+        curr = -1
+        for pos in cubes_pos:
+            write_res(Rock.ROUND, roll(curr, pos))
+            curr = pos
 
-    res.extend(roll(curr, len(line)))
+        write_res(Rock.ROUND, roll(curr, len(line)))
+        return res
 
-    return res
+    return [roll_line(l) for l in data_iter]
 
 
-def total_load(line: list[Rock]) -> int:
-    return sum(len(data) - i for i in roll_north(line))
+def spin_n(reps: int) -> Data:
+    class Solution(NamedTuple):
+        non_loop: int
+        loop_len: int
+
+    cache: list[Data] = []
+
+    def spin(data: Data) -> Data:
+        res: Data = data
+
+        for _ in range(4):
+            res = tilt_platform(res)
+            res = rotate_clockwise(res)
+
+        return res
+
+    def solve() -> Solution:
+        curr = rotate_anticlockwise(data)
+
+        def check() -> int | None:
+            for i, d in enumerate(cache):
+                if d == curr:
+                    return i
+
+        i: int = 0
+        while (prev := check()) is None:
+            cache.append(curr)
+            curr = spin(curr)
+            i += 1
+
+        return Solution(prev, i - prev)
+
+    non_loop, loop_len = solve()
+    return cache[non_loop + (reps - non_loop) % loop_len]
+
+
+def total_load(data: Data) -> int:
+    def line_load(line: list[Rock]) -> int:
+        loads = [len(data) - i for i, s in enumerate(line) if s == Rock.ROUND]
+        return sum(loads)
+
+    return sum(line_load(l) for l in data)
 
 
 def main():
     global data
+    TOTAL_CYCLES = 1_000_000_000
 
     with fileinput.input(encoding="utf8") as file_input:
         data = parse_input(file_input)
 
-    P1: int = sum(total_load(l) for l in data_iter(Direction.NORTH))
-    P2: int = 0
+    P1: int = total_load(tilt_platform(rotate_anticlockwise(data)))
+    P2: int = total_load(spin_n(TOTAL_CYCLES))
 
     print(f"P1: {P1}")
     print(f"P2: {P2}")
