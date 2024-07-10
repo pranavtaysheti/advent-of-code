@@ -62,3 +62,4 @@ _deps
 __pycache__/
 main
 example.txt
+input.txt
