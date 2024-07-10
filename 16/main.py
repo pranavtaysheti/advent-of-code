@@ -1,6 +1,7 @@
 import fileinput
-from array import array
-from enum import IntEnum, StrEnum
+from ast import Or
+from enum import Enum, StrEnum, auto
+from itertools import chain
 from typing import NamedTuple
 
 
@@ -17,11 +18,16 @@ class Coordinate(NamedTuple):
     col: int
 
 
-class Direction(IntEnum):
-    UP = 0
-    RIGHT = 2
-    DOWN = 1
-    LEFT = 3
+class Direction(Enum):
+    UP = auto()
+    RIGHT = auto()
+    DOWN = auto()
+    LEFT = auto()
+
+
+class Orientation(Enum):
+    HORIZONTAL = auto()
+    VERTICAL = auto()
 
 
 class Ray(NamedTuple):
@@ -43,9 +49,9 @@ def parse_input(input: fileinput.FileInput[str]) -> Data:
     return res
 
 
-def solve():
+def solve(pos: Coordinate, direction: Direction) -> int:
     state: State = [[False for _ in range(len(data[0]))] for _ in range(len(data))]
-    rays: list[Ray] = [Ray(Coordinate(0, 0), Direction.RIGHT)]
+    rays: list[Ray] = [Ray(pos, direction)]
     seen_splitters: list[Coordinate] = []
 
     def seen_splitter(pos: Coordinate) -> bool:
@@ -70,14 +76,25 @@ def solve():
                 return Coordinate(pos.row, pos.col - 1)
 
     def trace_ray(ray: Ray):
-        ray_state: State = [
-            [False for _ in range(len(data[0]))] for _ in range(len(data))
-        ]
+        ray_state: dict[Orientation, list[Coordinate]] = {
+            Orientation.HORIZONTAL: [],
+            Orientation.VERTICAL: [],
+        }
         curr_pos = ray.pos
         curr_direction = ray.direction
 
+        def append_pos(pos: Coordinate, direction: Direction):
+            ray_state[
+                {
+                    Direction.UP: Orientation.VERTICAL,
+                    Direction.DOWN: Orientation.VERTICAL,
+                    Direction.RIGHT: Orientation.HORIZONTAL,
+                    Direction.LEFT: Orientation.HORIZONTAL,
+                }[direction]
+            ].append(pos)
+
         def step(pos: Coordinate, direction: Direction) -> Direction | None:
-            ray_state[pos.row][pos.col] = True
+            append_pos(pos, direction)
             cell = data[pos.row][pos.col]
 
             match cell:
@@ -119,7 +136,7 @@ def solve():
         while (
             (0 <= curr_pos.row < len(data))
             and (0 <= curr_pos.col < len(data[0]))
-            and (not ray_state[curr_pos.row][curr_pos.col])
+            and (curr_pos not in ray_state)
         ):
             # print(f"{curr_pos.row=}, {curr_pos.col=}")
 
@@ -132,19 +149,12 @@ def solve():
         return ray_state
 
     while rays:
-        curr_state = trace_ray(rays.pop())
-        state = [
-            [
-                any([curr_state[row][col], state[row][col]])
-                for col in range(len(state[0]))
-            ]
-            for row in range(len(state))
-        ]
+        ray_state = trace_ray(rays.pop())
+        for row, col in chain(
+            ray_state[Orientation.HORIZONTAL], ray_state[Orientation.VERTICAL]
+        ):
+            state[row][col] = True
 
-    return state
-
-
-def count_steps(state: State) -> int:
     return sum(row.count(True) for row in state)
 
 
@@ -154,8 +164,19 @@ def main():
     with fileinput.input(encoding="utf8") as input_file:
         data = parse_input(input_file)
 
-    P1: int = count_steps(solve())
-    P2: int = 0
+    P1: int = solve(Coordinate(0, 0), Direction.RIGHT)
+    P2: int = max(
+        *(solve(Coordinate(i, 0), Direction.RIGHT) for i in range(len(data))),
+        *(solve(Coordinate(0, j), Direction.DOWN) for j in range(len(data[0]))),
+        *(
+            solve(Coordinate(i, len(data[0]) - 1), Direction.LEFT)
+            for i in range(len(data))
+        ),
+        *(
+            solve(Coordinate(len(data) - 1, j), Direction.UP)
+            for j in range(len(data[0]))
+        ),
+    )
 
     print(f"P1: {P1}")
     print(f"P2: {P2}")
