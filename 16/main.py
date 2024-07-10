@@ -1,5 +1,4 @@
 import fileinput
-from ast import Or
 from enum import Enum, StrEnum, auto
 from itertools import chain
 from typing import NamedTuple
@@ -138,8 +137,6 @@ def solve(pos: Coordinate, direction: Direction) -> int:
             and (0 <= curr_pos.col < len(data[0]))
             and (curr_pos not in ray_state)
         ):
-            # print(f"{curr_pos.row=}, {curr_pos.col=}")
-
             curr_direction = step(curr_pos, curr_direction)
             if curr_direction is None:
                 break
