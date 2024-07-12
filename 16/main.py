@@ -52,12 +52,21 @@ def solve(pos: Coordinate, direction: Direction) -> int:
     state: State = [[False for _ in range(len(data[0]))] for _ in range(len(data))]
     rays: list[Ray] = [Ray(pos, direction)]
     seen_splitters: list[Coordinate] = []
+    seen_mirrors: list[Ray] = []
 
     def seen_splitter(pos: Coordinate) -> bool:
         if pos in seen_splitters:
             return True
 
         seen_splitters.append(pos)
+        return False
+
+    def seen_mirror(pos: Coordinate, direction: Direction) -> bool:
+        for p, d in seen_mirrors:
+            if p == pos and d == direction:
+                return True
+
+        seen_mirrors.append(Ray(pos, direction))
         return False
 
     def add_ray(pos: Coordinate, direction: Direction):
@@ -101,6 +110,9 @@ def solve(pos: Coordinate, direction: Direction) -> int:
                     return direction
 
                 case Cell.FORWARD_MIRROR:
+                    if seen_mirror(pos, direction):
+                        return None
+
                     return {
                         Direction.RIGHT: Direction.UP,
                         Direction.DOWN: Direction.LEFT,
@@ -109,6 +121,9 @@ def solve(pos: Coordinate, direction: Direction) -> int:
                     }[direction]
 
                 case Cell.BACKWARD_MIRROR:
+                    if seen_mirror(pos, direction):
+                        return None
+
                     return {
                         Direction.RIGHT: Direction.DOWN,
                         Direction.DOWN: Direction.RIGHT,
@@ -132,11 +147,7 @@ def solve(pos: Coordinate, direction: Direction) -> int:
                         add_ray(pos, Direction.RIGHT)
                         add_ray(pos, Direction.LEFT)
 
-        while (
-            (0 <= curr_pos.row < len(data))
-            and (0 <= curr_pos.col < len(data[0]))
-            and (curr_pos not in ray_state)
-        ):
+        while (0 <= curr_pos.row < len(data)) and (0 <= curr_pos.col < len(data[0])):
             curr_direction = step(curr_pos, curr_direction)
             if curr_direction is None:
                 break
