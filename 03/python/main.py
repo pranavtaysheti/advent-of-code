@@ -1,9 +1,10 @@
 from __future__ import annotations
-from collections.abc import Generator
-from itertools import takewhile, dropwhile, chain
-from typing import Never, NamedTuple
 
-INPUT_FILE = "input.txt"
+import fileinput
+from collections.abc import Generator
+from itertools import chain, dropwhile, takewhile
+from typing import NamedTuple, Never
+
 INPUT_WIDTH = 140
 FILLER_CHAR = "."
 BUFFER_LINE = [FILLER_CHAR] * 140
@@ -47,7 +48,7 @@ def get_num(s: list[str]) -> Generator[list[CharPos], Never, None]:
 p1_sum = 0
 p2_sum = 0
 
-with open(INPUT_FILE, "r") as file:
+with fileinput.input(encoding="utf8") as file:
     input: list[list[str]] = [
         BUFFER_LINE,
         *[[FILLER_CHAR, *[c for c in l[0:-1]], FILLER_CHAR] for l in file],
