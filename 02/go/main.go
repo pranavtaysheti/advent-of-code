@@ -80,11 +80,32 @@ func totalPossibleSum() (r int) {
 	return
 }
 
+func totalPower() (r int) {
+	gamePower := func(g game) int {
+		minRed := 0
+		minBlue := 0
+		minGreen := 0
+
+		for _, c := range g {
+			minRed = max(minRed, c.red)
+			minBlue = max(minBlue, c.blue)
+			minGreen = max(minGreen, c.green)
+		}
+
+		return minRed * minBlue * minGreen
+	}
+
+	for _, g := range data {
+		r += gamePower(g)
+	}
+
+	return
+}
 func main() {
 	parseInput(os.Stdin)
 
 	P1 := totalPossibleSum()
-	P2 := 0
+	P2 := totalPower()
 
 	fmt.Printf("P1: %d \n", P1)
 	fmt.Printf("P2: %d \n", P2)
