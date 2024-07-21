@@ -1,6 +1,7 @@
-from typing import NamedTuple
-from itertools import batched
+import fileinput
 from collections.abc import Callable
+from itertools import batched
+from typing import NamedTuple
 
 
 class MapLayout(NamedTuple):
@@ -110,7 +111,7 @@ def solve_range(rl: list[Range]) -> list[Range]:
     return curr_ranges
 
 
-with open("input.txt", "r") as input_file:
+with fileinput.input(encoding="utf-8") as input_file:
     seeds = [int(s) for s in next(input_file)[7:].split()]
 
     for l in input_file:

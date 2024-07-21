@@ -1,3 +1,4 @@
+import fileinput
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable
 from itertools import chain
@@ -13,9 +14,9 @@ class HandBid(NamedTuple):
 
 
 def joker_to_best(hand: str) -> str:
-    hand_count = Counter(hand.replace('J', ''))
+    hand_count = Counter(hand.replace("J", ""))
     if len(hand_count) == 0:
-        max_card = 'J'
+        max_card = "J"
     else:
         [(max_card, _)] = hand_count.most_common(1)
     return hand.replace("J", max_card)
@@ -49,7 +50,9 @@ def type_classify(
     return type_classified
 
 
-def ordered_handbids(type_classified: dict[int, list[HandBid]], cards: list[str]) -> Iterable[HandBid]:
+def ordered_handbids(
+    type_classified: dict[int, list[HandBid]], cards: list[str]
+) -> Iterable[HandBid]:
     for type_hand in type_classified.values():
         type_hand.sort(key=second_order_key_factory(cards))
 
@@ -63,16 +66,19 @@ def solve(hand_bids: Iterable[HandBid]) -> int:
         (i + 1) * bid for i, bid in enumerate(hand_bid.bid for hand_bid in hand_bids)
     )
 
+
 def main():
-    with open("input.txt") as input_file:
-        input = [HandBid(hand, int(bid)) for hand, bid in (line.split() for line in input_file)]
+    with fileinput.input(encoding="utf-8") as input_file:
+        input = [
+            HandBid(hand, int(bid))
+            for hand, bid in (line.split() for line in input_file)
+        ]
 
     p1_sol = solve(ordered_handbids(type_classify(input), CARDS))
-    p2_sol = solve(
-        ordered_handbids(type_classify(input, joker_to_best), CARDS_J)
-    )
+    p2_sol = solve(ordered_handbids(type_classify(input, joker_to_best), CARDS_J))
     print(f"P1: {p1_sol}")
     print(f"P2: {p2_sol}")
+
 
 if __name__ == "__main__":
     main()

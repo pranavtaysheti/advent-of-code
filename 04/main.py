@@ -1,3 +1,4 @@
+import fileinput
 from typing import TypedDict
 
 
@@ -26,7 +27,7 @@ card_set: list[CardBundle] = []
 sum_p1 = 0
 sum_p2 = 0
 
-with open("input.txt", "r") as input_file:
+with fileinput.input(encoding="utf-8") as input_file:
     for card_str in input_file:
         card_set.append(
             {
