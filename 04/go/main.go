@@ -15,9 +15,14 @@ type card struct {
 	have    []int
 }
 
-var data []card
+type matchedCard struct {
+	card
+	matches int
+}
 
-func parseData(r io.Reader) {
+var data []matchedCard
+
+func parseData(r io.Reader) (res []card) {
 	strToIntSlice := func(s []string) (r []int) {
 		for _, num := range s {
 			v, _ := strconv.Atoi(num)
@@ -43,38 +48,66 @@ func parseData(r io.Reader) {
 		winning := strToIntMap(strings.Fields(cardText[9:39]))
 		have := strToIntSlice(strings.Fields(cardText[41:]))
 
-		data = append(data, card{
+		res = append(res, card{
 			winning: winning,
 			have:    have,
 		})
 	}
+
+	return
 }
 
-func calculateScore(c card) int {
-	r := 0.5
-
-	for _, n := range c.have {
-		if _, ok := c.winning[n]; ok {
-			r *= 2
+func compile(d []card) (res []matchedCard) {
+	for _, c := range d {
+		matches := 0
+		for _, n := range c.have {
+			if _, ok := c.winning[n]; ok {
+				matches += 1
+			}
 		}
+
+		res = append(res, matchedCard{c, matches})
 	}
 
-	return int(math.Floor(r))
+	return
 }
 
-func sumScore() (r int) {
-	for _, c := range data {
+func sumScore(d []matchedCard) (r int) {
+	calculateScore := func(c matchedCard) int {
+		return int(math.Floor(math.Pow(2, float64(c.matches-1))))
+	}
+
+	for _, c := range d {
 		r += calculateScore(c)
 	}
 
 	return
 }
 
-func main() {
-	parseData(os.Stdin)
+func sumScratchcardsCopies(d []matchedCard) (res int) {
+	copies := make([]int, len(data))
+	for i := range copies {
+		copies[i] = 1
+	}
 
-	P1 := sumScore()
-	P2 := 0
+	for i, c := range d {
+		for j := range c.matches {
+			copies[i+j+1] += copies[i]
+		}
+	}
+
+	for _, n := range copies {
+		res += n
+	}
+
+	return
+}
+
+func main() {
+	data = compile(parseData(os.Stdin))
+
+	P1 := sumScore(data)
+	P2 := sumScratchcardsCopies(data)
 
 	fmt.Printf("P1: %d \n", P1)
 	fmt.Printf("P2: %d \n", P2)
