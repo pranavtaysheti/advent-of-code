@@ -9,62 +9,103 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 type handBidType int
 
 var strength = []rune{'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'}
+var jokerStrength = []rune{'J', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'Q', 'K', 'A'}
 
 type handBid struct {
 	hand string
 	bid  int
 }
 
-type scoredHandBid struct {
-	handBid
+type handBidScore struct {
 	typeScore int
 	score     int
+	bid       int
 }
 
-var data = []scoredHandBid{}
+var data = []handBid{}
 
-func (h handBid) score() (res int) {
-	for _, c := range h.hand {
-		res *= 13
-		res += slices.Index(strength, c)
+func count(h string) map[rune]int {
+	count := map[rune]int{}
+	for _, c := range h {
+		count[c]++
+	}
+
+	return count
+}
+
+func score(h string, m []rune) (res int) {
+	for _, c := range h {
+		res *= len(m)
+		res += slices.Index(m, c)
 	}
 
 	return
 }
 
-func (h handBid) typeScore() (res int) {
-	count := map[rune]int{}
-	for _, c := range h.hand {
-		count[c]++
-	}
-
-	for v := range maps.Values(count) {
+func typeScore(h string) (res int) {
+	for v := range maps.Values(count(h)) {
 		res += int(math.Pow(float64(v), 2))
 	}
 
 	return
 }
 
-func newScoredHandBid(h handBid) scoredHandBid {
-	return scoredHandBid{
-		h,
-		h.typeScore(),
-		h.score(),
+func substituteJoker(h string) string {
+	count := count(h)
+	var currMax rune
+	currMaxqty := 0
+
+	for k, v := range maps.All(count) {
+		if k == 'J' {
+			continue
+		}
+
+		if v > currMaxqty {
+			currMax = k
+			currMaxqty = v
+		}
+	}
+
+	if currMaxqty == 0 {
+		return h
+	}
+
+	return strings.Replace(h, "J", string(currMax), -1)
+}
+
+func scoreAll(f func(h handBid) handBidScore) (res []handBidScore) {
+	for _, h := range data {
+		res = append(res, f(h))
+	}
+
+	return
+}
+
+func scoreHandBid(h handBid) handBidScore {
+	return handBidScore{
+		typeScore(h.hand),
+		score(h.hand, strength),
+		h.bid,
 	}
 }
 
-func sortInput(d []handBid) []scoredHandBid {
-	slice := []scoredHandBid{}
-	for _, h := range d {
-		slice = append(slice, newScoredHandBid(h))
+func jokerScoreHandBid(h handBid) handBidScore {
+	return handBidScore{
+		typeScore(substituteJoker(h.hand)),
+		score(h.hand, jokerStrength),
+		h.bid,
 	}
+}
 
-	sortFunc := func(a, b scoredHandBid) int {
+func sortInput(d []handBidScore) []handBidScore {
+	slice := slices.Clone(d)
+	sortFunc := func(a, b handBidScore) int {
 		if a.typeScore != b.typeScore {
 			return a.typeScore - b.typeScore
 		}
@@ -88,18 +129,19 @@ func parseInput(r io.Reader) (res []handBid) {
 	return
 }
 
-func totalWinning() (res int) {
-	for i, s := range data {
+func totalWinning(d []handBidScore) (res int) {
+	for i, s := range d {
 		res += (i + 1) * s.bid
 	}
 
 	return
 }
-func main() {
-	data = sortInput(parseInput(os.Stdin))
 
-	P1 := totalWinning()
-	P2 := 0
+func main() {
+	data = parseInput(os.Stdin)
+
+	P1 := totalWinning(sortInput(scoreAll(scoreHandBid)))
+	P2 := totalWinning(sortInput(scoreAll(jokerScoreHandBid)))
 
 	fmt.Printf("P1: %d \n", P1)
 	fmt.Printf("P2: %d \n", P2)
