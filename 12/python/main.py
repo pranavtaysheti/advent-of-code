@@ -56,8 +56,6 @@ class Record(NamedTuple):
                 if new_counts[0] == 0 and active:
                     return 0
 
-                if new_counts[0] == 0 and not active:
-                    print("wird thing happened")
                 new_counts[0] -= 1
                 active = True
 
