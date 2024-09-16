@@ -2,7 +2,7 @@
 
 ## Go
 
-Version: 1.22
+Version: 1.23
 
 ```bash
 cd go
