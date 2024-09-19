@@ -1,5 +1,6 @@
 package main
 
+//solved using modified djikstra algorithm. scope for optimization exists.
 import (
 	"bufio"
 	"fmt"
@@ -43,6 +44,7 @@ type pathFinder struct {
 	currSteps    int
 	memo         memo
 	nextBlocks   []blockPos
+	stepFilter   func(a approach, d direction) bool
 }
 
 var data [][]int
@@ -64,14 +66,31 @@ func parseInput(r io.Reader) {
 
 }
 
-func (p *pathFinder) isInNextBlocks(pos position, a approach, s int) bool {
+func (p *pathFinder) isNewNextBlock(pos position, a approach, s int) bool {
 	for _, b := range p.nextBlocks {
 		if b.approach == a && b.position == pos && b.shortestPath <= s {
-			return true
+			return false
 		}
 	}
 
-	return false
+	return true
+}
+
+func crucibleStepFilter(a approach, d direction) bool {
+	if a.approachSteps == 3 && d == a.approachDirection {
+		return false
+	}
+
+	return true
+}
+
+func ultraCrucibleStepFilter(a approach, d direction) bool {
+	if (a.approachSteps == 10 && d == a.approachDirection) ||
+		((a.approachSteps < 4 && a.approachSteps > 0) && d != a.approachDirection) {
+		return false
+	}
+
+	return true
 }
 
 func (p *pathFinder) updateNextBlocks() {
@@ -92,15 +111,7 @@ func (p *pathFinder) updateNextBlocks() {
 			return false
 		}
 
-		if p.currApproach.approachSteps == 3 && d == p.currApproach.approachDirection {
-			return false
-		}
-
-		if p.currApproach.approachDirection+d == 3 {
-			return false
-		}
-
-		return true
+		return !(p.currApproach.approachDirection+d == 3)
 	}
 
 	updateBlock := func(pos position, d direction) (a approach, s int) {
@@ -125,12 +136,12 @@ func (p *pathFinder) updateNextBlocks() {
 	}
 
 	for _, n := range possiblities {
-		if !check(n.position, n.direction) {
+		if !check(n.position, n.direction) || !p.stepFilter(p.currApproach, n.direction) {
 			continue
 		}
 
 		approach, shortestPath := updateBlock(n.position, n.direction)
-		if p.isInNextBlocks(n.position, approach, shortestPath) || p.memo.isApproached(n.position, approach) {
+		if !p.isNewNextBlock(n.position, approach, shortestPath) || !p.memo.isNewApproach(n.position, approach) {
 			continue
 		}
 
@@ -140,19 +151,19 @@ func (p *pathFinder) updateNextBlocks() {
 	return
 }
 
-func (m memo) isApproached(pos position, a approach) bool {
+func (m memo) isNewApproach(pos position, a approach) bool {
 	if len(m[pos]) > 0 {
 		for approach := range m[pos] {
 			if approach == a {
-				return true
+				return false
 			}
 		}
 
-		return false
+		return true
 	}
 
 	m[pos] = map[approach]int{}
-	return false
+	return true
 }
 
 func (m memo) addApproach(pos position, a approach, s int) {
@@ -199,41 +210,59 @@ func (p *pathFinder) setNewApproach(pos position, a approach, s int) {
 	p.currSteps = s
 }
 
-func (p *pathFinder) solve() {
+func (p *pathFinder) step() bool {
 	p.updateNextBlocks()
 	if b, ok := p.closestNextBlock(); ok {
 		p.setNewApproach(b.position, b.approach, b.shortestPath)
-		p.solve()
+		return true
 	}
+
+	return false
 }
 
-func (p *pathFinder) getShortest(pos position) int {
+func (p *pathFinder) getShortest(pos position, f func(a approach) bool) int {
 	res := math.MaxInt
-	for _, shortest := range p.memo[pos] {
-		if shortest < res {
+	for approach, shortest := range p.memo[pos] {
+		// fmt.Println(approach, shortest)
+		if shortest < res && f(approach) {
 			res = shortest
 		}
 	}
 
+	// fmt.Println("-----------")
 	return res
 }
 
-func newPathFinder() (res pathFinder) {
-	res = pathFinder{
-		memo: memo{},
+func crucibleSolFilter(_ approach) bool {
+	return true
+}
+
+func ultraCrucibleSolFilter(a approach) bool {
+	if a.approachSteps < 4 {
+		return false
+	}
+
+	return true
+}
+
+func solvePathFinder(c func(a approach, d direction) bool) (res *pathFinder) {
+	res = &pathFinder{
+		memo:       memo{},
+		stepFilter: c,
 	}
 	res.memo[position{0, 0}] = map[approach]int{}
+
+	for res.step() {
+	}
 
 	return res
 }
 
 func main() {
 	parseInput(os.Stdin)
-	pathFinder := newPathFinder()
-	(&pathFinder).solve()
 
-	P1 := pathFinder.getShortest(position{len(data) - 1, len(data[0]) - 1})
-	P2 := 0
+	P1 := solvePathFinder(crucibleStepFilter).getShortest(position{len(data) - 1, len(data[0]) - 1}, crucibleSolFilter)
+	P2 := solvePathFinder(ultraCrucibleStepFilter).getShortest(position{len(data) - 1, len(data[0]) - 1}, ultraCrucibleSolFilter)
 
 	fmt.Printf("P1: %v \n", P1)
 	fmt.Printf("P2: %d \n", P2)
