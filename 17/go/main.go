@@ -223,13 +223,11 @@ func (p *pathFinder) step() bool {
 func (p *pathFinder) getShortest(pos position, f func(a approach) bool) int {
 	res := math.MaxInt
 	for approach, shortest := range p.memo[pos] {
-		// fmt.Println(approach, shortest)
 		if shortest < res && f(approach) {
 			res = shortest
 		}
 	}
 
-	// fmt.Println("-----------")
 	return res
 }
 
