@@ -11,6 +11,7 @@ import (
 )
 
 type direction rune
+type parser func(l string) (direction, int)
 
 const (
 	dRight direction = 'R'
@@ -31,42 +32,73 @@ type trench struct {
 
 type digPlan struct {
 	cursor    position
-	border    []trench
+	border    []position
 	perimeter int
 }
 
-var data = digPlan{
-	border: []trench{},
+var p1data = digPlan{
+	border: []position{},
 }
 
-func parseInput(r io.Reader) {
-	parseLine := func(d direction, s int, c int) {
-		currRow := data.cursor.row
-		currCol := data.cursor.col
+var p2data = digPlan{
+	border: []position{},
+}
+
+func p1parser(l string) (direction, int) {
+	fields := strings.Fields(l)
+	direction := direction(fields[0][0])
+	length, _ := strconv.Atoi(fields[1])
+
+	return direction, length
+}
+
+func p2parser(l string) (direction, int) {
+	fields := strings.Fields(l)
+	colourField := fields[2]
+	directionInt, _ := strconv.Atoi(colourField[len(colourField)-2 : len(colourField)-1])
+	var direction direction
+	switch directionInt {
+	case 0:
+		direction = 'R'
+	case 1:
+		direction = 'D'
+	case 2:
+		direction = 'L'
+	case 3:
+		direction = 'U'
+	}
+
+	length, _ := strconv.ParseInt(colourField[2:len(colourField)-2], 16, 0)
+
+	return direction, int(length)
+}
+
+func parseInput(r io.Reader, p []*digPlan, e []parser) {
+	parseLine := func(p *digPlan, d direction, s int) {
+		currRow := p.cursor.row
+		currCol := p.cursor.col
 
 		switch d {
 		case dRight:
-			data.cursor = position{currRow, currCol + s}
+			p.cursor = position{currRow, currCol + s}
 		case dDown:
-			data.cursor = position{currRow + s, currCol}
+			p.cursor = position{currRow + s, currCol}
 		case dLeft:
-			data.cursor = position{currRow, currCol - s}
+			p.cursor = position{currRow, currCol - s}
 		case dUp:
-			data.cursor = position{currRow - s, currCol}
+			p.cursor = position{currRow - s, currCol}
 		}
 
-		data.border = append(data.border, trench{data.cursor, c})
-		data.perimeter += s
+		p.border = append(p.border, p.cursor)
+		p.perimeter += s
 	}
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
-		direction := direction(fields[0][0])
-		length, _ := strconv.Atoi(fields[1])
-		colour, _ := strconv.ParseInt(fields[2][2:len(fields[2])-1], 16, 0)
-
-		parseLine(direction, length, int(colour))
+		for i := range len(p) {
+			direction, length := e[i](scanner.Text())
+			parseLine(p[i], direction, length)
+		}
 	}
 }
 
@@ -82,20 +114,21 @@ func pairWise[T any](s []T) iter.Seq2[T, T] {
 	}
 }
 
-// Using https://en.wikipedia.org/wiki/Shoelace_formula
+// Using https://en.wikipedia.org/wiki/Shoelace_formula, https://en.wikipedia.org/wiki/Pick's_theorem
 func (d digPlan) area() int {
 	areaDoubled := 0
-	for p1, p2 := range pairWise(data.border) {
-		areaDoubled += p1.pos.col*p2.pos.row - p1.pos.row*p2.pos.col
+	for p1, p2 := range pairWise(d.border) {
+		areaDoubled += p1.col*p2.row - p1.row*p2.col
 	}
 
 	return (areaDoubled + 2 + d.perimeter) / 2
 }
-func main() {
-	parseInput(os.Stdin)
 
-	P1 := data.area()
-	P2 := 0
+func main() {
+	parseInput(os.Stdin, []*digPlan{&p1data, &p2data}, []parser{p1parser, p2parser})
+
+	P1 := p1data.area()
+	P2 := p2data.area()
 
 	fmt.Printf("P1: %d \n", P1)
 	fmt.Printf("P2: %d \n", P2)
