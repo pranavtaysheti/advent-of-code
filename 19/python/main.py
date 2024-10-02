@@ -49,6 +49,21 @@ class Data:
     workflows: dict[str, list[Rule]] = field(default_factory=dict)
     parts: list[Part] = field(default_factory=list)
 
+    def solve(self) -> list[Part]:
+        def run_workflow(name: str, part: Part) -> bool:
+            for rule in self.workflows[name]:
+                if (res := rule.test(part)) is None:
+                    continue
+
+                if isinstance(res, bool):
+                    return res
+
+                return run_workflow(res, part)
+
+            raise AssertionError
+
+        return [part for part in self.parts if run_workflow("in", part)]
+
 
 def parse_input(file: FileInput[str]) -> Data:
     data = Data()
@@ -100,26 +115,10 @@ def parse_input(file: FileInput[str]) -> Data:
     return data
 
 
-def solve(data: Data) -> list[Part]:
-    def run_workflow(name: str, part: Part) -> bool:
-        for rule in data.workflows[name]:
-            if (res := rule.test(part)) is None:
-                continue
-
-            if isinstance(res, bool):
-                return res
-
-            return run_workflow(res, part)
-
-        raise AssertionError
-
-    return [part for part in data.parts if run_workflow("in", part)]
-
-
 if __name__ == "__main__":
     data = parse_input(fileinput.input(encoding="utf-8"))
 
-    P1 = sum(p.value() for p in solve(data))
+    P1 = sum(p.value() for p in data.solve())
     P2 = 0
 
     print(f"P1: {P1}")
