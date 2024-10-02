@@ -85,17 +85,15 @@ def parse_input(file: FileInput[str]) -> Data:
 
             raise AssertionError
 
-        name = line[: line.index("{")]
-        workflow: list[Rule] = []
-
-        for rule in line[len(name) + 1 : -2].split(","):
+        def parse_rule(rule: str) -> Rule:
             if ":" not in rule:
-                workflow.append(Rule(None, parse_action(rule)))
-                continue
+                return Rule(None, parse_action(rule))
 
             condition, action = rule.split(":")
-            workflow.append(Rule(parse_condition(condition), parse_action(action)))
+            return Rule(parse_condition(condition), parse_action(action))
 
+        name = line[: line.index("{")]
+        workflow = [parse_rule(rule) for rule in line[len(name) + 1 : -2].split(",")]
         data.workflows[name] = workflow
 
     def parse_part(line: str):
