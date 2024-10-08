@@ -17,8 +17,8 @@ type record struct {
 }
 
 func (r record) expand() record {
-	springs := make([]rune, len(r.springs)*5+4)
-	counts := make([]int, len(r.counts)*5)
+	springs := make([]rune, 0, len(r.springs)*5+5)
+	counts := make([]int, 0, len(r.counts)*5)
 
 	for range 5 {
 		springs = append(springs, r.springs...)
@@ -31,7 +31,7 @@ func (r record) expand() record {
 
 func (r record) solve() int {
 	memo := memo{}
-	return memo.solve(r.springs, r.counts, false)
+	return memo.solve(append([]rune{}, r.springs...), append([]int{}, r.counts...), false)
 }
 
 type recordSlice []record
@@ -46,9 +46,31 @@ func (rSlice recordSlice) expandIter() iter.Seq[record] {
 	}
 }
 
-type memo struct{}
+type memoKey struct {
+	springsHash string
+	countsHash  string
+	active      bool
+}
+
+func newMemoKey(s []rune, c []int, active bool) memoKey {
+	springsHash := string(s)
+	countsHash := fmt.Sprint(c)
+
+	return memoKey{springsHash, countsHash, active}
+}
+
+type memo map[memoKey]int
 
 func (m memo) solve(s []rune, c []int, active bool) int {
+	memoReturn := func(res int) int {
+		m[newMemoKey(s, c, active)] = res
+		return res
+	}
+
+	if res, ok := m[newMemoKey(s, c, active)]; ok {
+		return res
+	}
+
 	if len(c) == 1 && c[0] == 0 {
 		c = []int{}
 	}
@@ -64,30 +86,33 @@ func (m memo) solve(s []rune, c []int, active bool) int {
 	switch s[0] {
 	case '#':
 		if len(c) == 0 || (c[0] == 0 && active) {
-			return 0
+			return memoReturn(0)
 		}
 
-		c[0] -= 1
+		c[0]--
 		active = true
 
 	case '.':
 		if active {
-			if c[0] > 0 {
-				return 0
-			}
+			if len(c) > 0 {
+				if c[0] > 0 {
+					return memoReturn(0)
+				}
 
-			active = false
-			c = c[1:]
+				c = c[1:]
+			}
 		}
 
-	case '?':
-		damaged := m.solve(append([]rune{'#'}, s[1:]...), c, active)
-		operational := m.solve(append([]rune{'.'}, s[1:]...), c, active)
+		active = false
 
-		return damaged + operational
+	case '?':
+		damaged := m.solve(append([]rune{'#'}, s[1:]...), append([]int{}, c...), active)
+		operational := m.solve(append([]rune{'.'}, s[1:]...), append([]int{}, c...), active)
+
+		return memoReturn(damaged + operational)
 	}
 
-	return m.solve(s[1:], c, active)
+	return memoReturn(m.solve(s[1:], c, active))
 }
 
 var data = recordSlice{}
@@ -127,9 +152,8 @@ func main() {
 	parseInput(os.Stdin)
 
 	P1 := solve(slices.Values(data))
-	// P2 := solve(data.expandIter())
-	P2 := 0
+	P2 := solve(data.expandIter())
 
-	fmt.Printf("P1 %d \n", P1)
-	fmt.Printf("P2 %d \n", P2)
+	fmt.Printf("P1: %d \n", P1)
+	fmt.Printf("P2: %d \n", P2)
 }
