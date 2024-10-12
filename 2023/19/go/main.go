@@ -10,7 +10,6 @@ import (
 )
 
 type rule interface {
-	test(p part) bool
 	resolveAction() (redirection string, result bool)
 }
 
@@ -25,10 +24,6 @@ func (a action) resolveAction() (redirection string, result bool) {
 	default:
 		return string(a), result
 	}
-}
-
-func (a action) test(p part) bool {
-	return true
 }
 
 type condition struct {
@@ -49,13 +44,29 @@ func (c condition) test(p part) bool {
 
 }
 
+func (c condition) filter(p partRange) partRange {
+	res := p
+
+	switch c.operator {
+	case '>':
+		res[c.category] = categoryRange{
+			low:  max(c.limit+1, res[c.category].low),
+			high: res[c.category].high,
+		}
+
+	case '<':
+		res[c.category] = categoryRange{
+			low:  res[c.category].low,
+			high: min(c.limit-1, res[c.category].high),
+		}
+	}
+
+	return res
+}
+
 type conditionRule struct {
 	condition
 	action
-}
-
-func (c conditionRule) test(p part) bool {
-	return c.condition.test(p)
 }
 
 type part map[rune]int
@@ -70,8 +81,11 @@ func (p part) score() (res int) {
 
 func (p part) solve(wf workflow) bool {
 	for _, rule := range wf {
-		if !rule.test(p) {
-			continue
+		switch v := rule.(type) {
+		case conditionRule:
+			if !v.test(p) {
+				continue
+			}
 		}
 
 		redirection, result := rule.resolveAction()
@@ -83,6 +97,43 @@ func (p part) solve(wf workflow) bool {
 	}
 
 	panic(fmt.Sprintf("Unresolvable workflow: %v", wf))
+}
+
+type categoryRange struct {
+	low  int
+	high int
+}
+
+type partRange map[rune]categoryRange
+
+func (p1 partRange) union(p2 partRange) partRange {
+	res := partRange{}
+	for r := range p1 {
+		res[r] = categoryRange{
+			low:  min(p1[r].low, p2[r].low),
+			high: min(p1[r].high, p2[r].high),
+		}
+	}
+
+	return res
+}
+
+func (p partRange) combinations() int {
+	res := 1
+	for _, cr := range p {
+		res *= cr.high - cr.low + 1
+	}
+
+	return res
+}
+
+func makePartRange(c string, u int) partRange {
+	res := partRange{}
+	for _, r := range c {
+		res[r] = categoryRange{1, u}
+	}
+
+	return res
 }
 
 type workflow []rule
@@ -145,6 +196,10 @@ func solve() (res int) {
 	}
 
 	return
+}
+
+func filter() (res int) {
+	return res
 }
 
 func main() {

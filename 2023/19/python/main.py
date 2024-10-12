@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import fileinput
 from dataclasses import dataclass, field
 from fileinput import FileInput
-from itertools import takewhile
+from itertools import product, takewhile
 from typing import NamedTuple
 
 
@@ -10,38 +12,72 @@ class Condition(NamedTuple):
     operator: str
     limit: int
 
+    def filter(self, range_: PartRange) -> PartRange:
+        res = PartRange(range_)
+
+        match self.operator:
+            case ">":
+                res_low = res[self.category].low
+                res[self.category].low = max(res_low, self.limit + 1)
+
+            case "<":
+                res_high = res[self.category].high
+                res[self.category].high = min(res_high, self.limit - 1)
+
+        return res
+
+    def filterfalse(self, range_: PartRange) -> PartRange:
+        res = PartRange(range_)
+
+        match self.operator:
+            case ">":
+                res_high = res[self.category].high
+                res[self.category].low = min(res_high, self.limit)
+
+            case "<":
+                res_low = res[self.category].low
+                res[self.category].high = max(res_low, self.limit)
+
+        return res
+
+
+class Part(dict[str, int]):
+    def score(self) -> int:
+        return sum(self.values())
+
+
+class Range(NamedTuple):
+    low: int
+    high: int
+
+    def range(self):
+        return self.high - self.low + 1
+
+
+class PartRange(dict[str, Range]):
+    def score(self):
+        return product(v.high - v.low + 1 for v in self.values())
+
 
 class Rule(NamedTuple):
     condition: Condition | None
     action: bool | str
 
-    def test(self, part) -> bool | str | None:
+    def test(self, part: Part) -> bool | str | None:
         if self.condition is None:
             return self.action
 
         c = self.condition
         match c.operator:
             case ">":
-                if getattr(part, c.category) > c.limit:
+                if part[c.category] > c.limit:
                     return self.action
-
-                return None
 
             case "<":
-                if getattr(part, c.category) < c.limit:
+                if part[c.category] < c.limit:
                     return self.action
 
-                return None
-
-
-class Part(NamedTuple):
-    x: int = 0
-    m: int = 0
-    a: int = 0
-    s: int = 0
-
-    def value(self) -> int:
-        return self.x + self.m + self.a + self.s
+        return None
 
 
 @dataclass
@@ -60,9 +96,14 @@ class Data:
 
                 return run_workflow(res, part)
 
-            raise AssertionError
+            raise AssertionError("non-terminating workflow")
 
         return [part for part in self.parts if run_workflow("in", part)]
+
+    def combinations(self, high: int = 4000) -> PartRange:
+        def solve(part_range: PartRange, workflow: list[Rule]) -> PartRange: ...
+
+        return solve(PartRange(), self.workflows["in"])
 
 
 def parse_input(file: FileInput[str]) -> Data:
@@ -97,12 +138,13 @@ def parse_input(file: FileInput[str]) -> Data:
         data.workflows[name] = workflow
 
     def parse_part(line: str):
-        numbers: list[int] = []
-        for cat_str in line[1:-2].split(","):
-            _, amount = cat_str.split("=")
-            numbers.append(int(amount))
+        part = Part()
 
-        data.parts.append(Part(*numbers))
+        for cat_str in line[1:-2].split(","):
+            category, amount = cat_str.split("=")
+            part[category] = int(amount)
+
+        data.parts.append(part)
 
     for line in takewhile(lambda l: len(l) > 1, file):
         parse_workflow(line)
@@ -116,7 +158,7 @@ def parse_input(file: FileInput[str]) -> Data:
 if __name__ == "__main__":
     data = parse_input(fileinput.input(encoding="utf-8"))
 
-    P1 = sum(p.value() for p in data.solve())
+    P1 = sum(p.score() for p in data.solve())
     P2 = 0
 
     print(f"P1: {P1}")
