@@ -61,14 +61,15 @@ func parse(r io.Reader) {
 			break
 		}
 
+		if len(state) == 0 {
+			for pos := 1; pos < len(scanner.Text()); pos += 4 {
+				state = append(state, []crate{})
+			}
+		}
+
 		line := scanner.Text()
 		for pos, i := 1, 0; pos < len(line); pos += 4 {
 			if c := line[pos]; c != ' ' {
-				if n := i - len(state); n >= 0 {
-					for range n + 1 {
-						state = append(state, make([]crate, 0))
-					}
-				}
 				state[i] = append(state[i], crate(c))
 			}
 
