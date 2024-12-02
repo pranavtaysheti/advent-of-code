@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -16,21 +17,21 @@ func (r report) isSafe() bool {
 	const min_diff = 1
 
 	pattern := 0
-	prev_level := r[0]
+	prevLevel := r[0]
 	for _, level := range r[1:] {
 		switch pattern {
 		case 1:
-			if level-prev_level < min_diff || level-prev_level > max_diff {
+			if level-prevLevel < min_diff || level-prevLevel > max_diff {
 				return false
 			}
 
 		case -1:
-			if prev_level-level < min_diff || prev_level-level > max_diff {
+			if prevLevel-level < min_diff || prevLevel-level > max_diff {
 				return false
 			}
 
 		case 0:
-			switch v := level - prev_level; {
+			switch v := level - prevLevel; {
 			case v <= -min_diff && v >= -max_diff:
 				pattern = -1
 			case v >= min_diff && v <= max_diff:
@@ -41,23 +42,40 @@ func (r report) isSafe() bool {
 
 		}
 
-		prev_level = level
+		prevLevel = level
 	}
 
 	return true
 }
 
+func (r report) dampen() bool {
+	for i := range len(r) {
+		newReport := report(slices.Concat(r[:i], r[i+1:]))
+		if newReport.isSafe() {
+			return true
+		}
+	}
+
+	return false
+}
+
 var data []report
 
-func countSafe() (count int) {
+func countSafe() (safe int, dampenedSafe int) {
 	for _, report := range data {
 		if report.isSafe() {
-			count++
+			safe++
+		} else {
+			if report.dampen() {
+				dampenedSafe++
+			}
 		}
 	}
 
 	return
 }
+
+
 func parse(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 
@@ -75,11 +93,11 @@ func parse(r io.Reader) {
 
 func main() {
 	parse(os.Stdin)
-
-	P1 := countSafe()
-	P2 := 0
+	
+	safe, dampenedSafe := countSafe()
+	P1 := safe
+	P2 := safe + dampenedSafe
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
-
 }
