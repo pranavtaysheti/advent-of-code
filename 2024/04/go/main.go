@@ -98,8 +98,10 @@ func CrossSearch(center rune, corner1 rune, corner2 rune) (count int) {
 			}
 		}
 	}
+
 	return
 }
+
 func main() {
 	parse(os.Stdin)
 	scan('X', 'A')
