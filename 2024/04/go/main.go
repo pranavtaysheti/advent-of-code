@@ -70,12 +70,42 @@ func linearSearch(w string) (res int) {
 	return
 }
 
+func CrossSearch(center rune, corner1 rune, corner2 rune) (count int) {
+	for pos := range posMap[center] {
+		if pos.row == 0 || pos.col == 0 || pos.row == len(data)-1 || pos.col == len(data[0])-1 {
+			continue
+		}
+
+		corners := []rune{}
+		corners = append(corners, data[pos.row-1][pos.col-1])
+		corners = append(corners, data[pos.row-1][pos.col+1])
+		corners = append(corners, data[pos.row+1][pos.col+1])
+		corners = append(corners, data[pos.row+1][pos.col-1])
+
+
+		if (corners[0] == corners[1] && corners[2] == corners[3]) ||
+			(corners[0] == corners[3] && corners[1] == corners[2]) {
+			cornerMap := map[rune]struct{}{}
+			for _, c := range corners {
+				cornerMap[c] = struct{}{}
+			}
+
+			_, ok1 := cornerMap[corner1]
+			_, ok2 := cornerMap[corner2]
+
+			if ok1 && ok2 {
+				count++
+			}
+		}
+	}
+	return
+}
 func main() {
 	parse(os.Stdin)
-	scan('X', 'M')
+	scan('X', 'A')
 
 	P1 := linearSearch("XMAS")
-	P2 := 0
+	P2 := CrossSearch('A', 'M', 'S')
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
