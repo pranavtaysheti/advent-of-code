@@ -45,16 +45,9 @@ func (u update) correctMiddle() int {
 
 	corrected := slices.Clone(u)
 	for i, n := range corrected[:(len(corrected)+1)/2] {
-
-		counter := 0
 	swap:
-		counter++
-
-		if counter >= 15 {
-			break
-		}
-
 		maxPos := i
+		
 		if beforeSlice, ok := orderRules[n]; ok {
 			for _, b := range beforeSlice {
 				if pos, ok := numPosMap[b]; ok {
