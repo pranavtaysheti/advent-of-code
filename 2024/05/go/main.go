@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -34,24 +35,47 @@ func (u update) check() bool {
 	return true
 }
 
-func (u update) score() int {
-	if u.check() {
-		return u[(len(u)-1)/2]
+func (u update) correctMiddle() int {
+	numPosMap := map[int]int{}
+	for i, n := range u {
+		if _, ok := numPosMap[n]; !ok {
+			numPosMap[n] = i
+		}
 	}
 
-	return 0
+	corrected := slices.Clone(u)
+	for i, n := range corrected[:(len(corrected)+1)/2] {
+
+		counter := 0
+	swap:
+		counter++
+
+		if counter >= 15 {
+			break
+		}
+
+		maxPos := i
+		if beforeSlice, ok := orderRules[n]; ok {
+			for _, b := range beforeSlice {
+				if pos, ok := numPosMap[b]; ok {
+					maxPos = max(maxPos, pos)
+				}
+			}
+
+			if maxPos > i {
+				numPosMap[corrected[i]], numPosMap[corrected[maxPos]] = numPosMap[corrected[maxPos]], numPosMap[corrected[i]]
+				corrected[i], corrected[maxPos] = corrected[maxPos], corrected[i]
+				n = corrected[i]
+				goto swap
+			}
+		}
+	}
+
+	return corrected[(len(corrected)-1)/2]
 }
 
 var orderRules = map[int][]int{}
 var updates = []update{}
-
-func solve() (sum int) {
-	for _, u := range updates {
-		sum += u.score()
-	}
-
-	return
-}
 
 func parse(r io.Reader) {
 	scanner := bufio.NewScanner(r)
@@ -83,9 +107,23 @@ func parse(r io.Reader) {
 
 func main() {
 	parse(os.Stdin)
-	
-	P1 := solve()
-	P2 := 0
+
+	var P1 int
+	var P2 int
+
+	incorrectIndexes := []int{}
+
+	for i, u := range updates {
+		if u.check() {
+			P1 += u[(len(u)-1)/2]
+		} else {
+			incorrectIndexes = append(incorrectIndexes, i)
+		}
+	}
+
+	for _, i := range incorrectIndexes {
+		P2 += updates[i].correctMiddle()
+	}
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
