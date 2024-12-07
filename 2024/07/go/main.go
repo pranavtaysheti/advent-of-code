@@ -25,25 +25,30 @@ type expression struct {
 type equation struct {
 	result     int
 	numbers    []int
-	tabulation map[int]struct{}
+	tabulation map[int]bool
 }
 
-func (e equation) solve() bool {
-	e.tabulation = map[int]struct{}{}
-	e.tabulation[e.numbers[0]] = struct{}{}
+func (e *equation) solve() {
+	e.tabulation = map[int]bool{}
+	e.tabulation[e.numbers[0]] = false
 
 	for _, num := range e.numbers[1:] {
-		newTabulation := map[int]struct{}{}
-		for res := range e.tabulation {
-			newTabulation[res+num] = struct{}{}
-			newTabulation[res*num] = struct{}{}
+		newTabulation := map[int]bool{}
+		for res, isconcat := range e.tabulation {
+			newTabulation[res+num] = isconcat
+			newTabulation[res*num] = isconcat
+
+			concatNum, _ := strconv.Atoi(fmt.Sprintf("%d%d", res, num))
+			newTabulation[concatNum] = true
 		}
 
 		e.tabulation = newTabulation
 	}
+}
 
-	_, ok := e.tabulation[e.result]
-	return ok
+func (e equation) isSovled() (ok bool, usesConcat bool) {
+	usesConcat, ok = e.tabulation[e.result]
+	return
 }
 
 var data = []equation{}
@@ -70,14 +75,24 @@ func parse(r io.Reader) {
 func main() {
 	parse(os.Stdin)
 
-	P1 := 0
+	woConcat := 0
+	wConcat := 0
+
 	for _, e := range data {
-		if e.solve() {
-			P1 += e.result
+		(&e).solve()
+
+		e.isSovled()
+		if ok, usesConcat := e.isSovled(); ok {
+			if usesConcat {
+				wConcat += e.result
+			} else {
+				woConcat += e.result
+			}
 		}
 	}
 
-	P2 := 0
+	P1 := woConcat
+	P2 := wConcat + woConcat
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
