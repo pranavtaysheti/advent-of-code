@@ -19,5 +19,6 @@
 			"black"
 		],
 		"deno.enable": true,
+		"python.defaultInterpreterPath": "python3.12",
 	},
 }
