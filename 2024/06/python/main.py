@@ -54,25 +54,19 @@ class Region(list[list[bool]]):
         curr: Cursor = copy(start)
         res: set[Position] = set()
 
-        while (0 <= (row := curr.position.row) < len(self)) and (
-            0 <= (col := curr.position.col) < len(self[0])
-        ):
-
+        while self.isMapped(row := curr.position.row, col := curr.position.col):
             c_row, c_col = curr.vector
-
-            if self.isObstacle(row + c_row, col + c_col):
-                curr.turn()
+            if self.isMapped(n_row := row + c_row, n_col := col + c_col):
+                if self[n_row][n_col]:
+                    curr.turn()
 
             res.add(curr.position)
             curr.step()
 
         return res
 
-    def isObstacle(self, row: int, col: int):
-        if 0 <= row < len(self) and 0 <= col < len(self[0]):
-            return self[row][col]
-
-        return False
+    def isMapped(self, row: int, col: int):
+        return 0 <= row < len(self) and 0 <= col < len(self[0])
 
 
 start: Cursor | None = None
