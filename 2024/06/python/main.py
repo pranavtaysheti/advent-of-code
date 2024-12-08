@@ -54,9 +54,9 @@ class Region(list[list[bool]]):
         curr: Cursor = copy(start)
         res: set[Position] = set()
 
-        while self.isMapped(row := curr.position.row, col := curr.position.col):
+        while self.is_mapped(row := curr.position.row, col := curr.position.col):
             c_row, c_col = curr.vector
-            if self.isMapped(n_row := row + c_row, n_col := col + c_col):
+            if self.is_mapped(n_row := row + c_row, n_col := col + c_col):
                 if self[n_row][n_col]:
                     curr.turn()
 
@@ -65,7 +65,7 @@ class Region(list[list[bool]]):
 
         return res
 
-    def isMapped(self, row: int, col: int):
+    def is_mapped(self, row: int, col: int):
         return 0 <= row < len(self) and 0 <= col < len(self[0])
 
 
