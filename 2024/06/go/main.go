@@ -34,8 +34,8 @@ func (d direction) vector() [2]int {
 type position [2]int
 
 func (p position) check() bool {
-	if (p[0] >= 0 && p[0] < len(region)) &&
-		(p[1] >= 0 && p[1] < len(region[0])) {
+	if (p[0] >= 0 && p[0] < len(data)) &&
+		(p[1] >= 0 && p[1] < len(data[0])) {
 		return true
 	}
 
@@ -47,7 +47,10 @@ type cursor struct {
 	direction
 }
 
-var region = [][]bool{}
+type region [][]bool
+
+
+var data = region([][]bool{})
 
 var start = cursor{}
 
@@ -82,7 +85,7 @@ func parse(r io.Reader) {
 			}
 		}
 
-		region = append(region, row)
+		data = append(data, row)
 	}
 }
 
@@ -103,7 +106,7 @@ func solve() int {
 		}
 
 		if pos := getNextPos(); pos.check() {
-			if region[pos[0]][pos[1]] == true {
+			if data[pos[0]][pos[1]] == true {
 				curr.direction = (curr.direction + 1) % 4
 			}
 		}
@@ -114,53 +117,9 @@ func solve() int {
 	return len(visitedMap)
 }
 
-// func countSteps() (steps int) {
-// 	curr := start
-
-// 	nextObstacle := func(line []bool) int {
-// 		for i, o := range line {
-// 			if o {
-// 				return i
-// 			}
-// 		}
-
-// 		return len(line) + 1
-// 	}
-
-// 	for curr.check() {
-// 		var line []bool
-
-// 		switch curr.direction {
-// 		case dUp:
-// 			for i := range curr.position[0] {
-// 				line = append(line, region[curr.position[0]-1-i][curr.position[1]])
-// 			}
-
-// 		case dRight:
-// 			line = region[curr.position[0]][curr.position[1]+1:]
-
-// 		case dDown:
-// 			for i := range len(region) - curr.position[0] - 1 {
-// 				line = append(line, region[curr.position[0]+1+i][curr.position[1]])
-// 			}
-
-// 		case dLeft:
-// 			line = slices.Clone(region[curr.position[0]][:curr.position[1]])
-// 			slices.Reverse(line)
-// 		}
-
-// 		lineSteps := nextObstacle(line)
-
-// 		curr.position = [2]int{
-// 			curr.position[0] + lineSteps*curr.vector()[0],
-// 			curr.position[1] + lineSteps*curr.vector()[1]}
-// 		curr.direction = (curr.direction + 1) % 4
-
-// 		steps += lineSteps
-// 	}
-
-// 	return
-// }
+func countLoop() {
+	//TODO
+}
 
 func main() {
 	parse(os.Stdin)
