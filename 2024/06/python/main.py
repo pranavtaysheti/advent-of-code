@@ -1,8 +1,7 @@
 import fileinput
 from copy import copy
-from dataclasses import InitVar
 from enum import IntEnum
-from typing import Callable, Literal, NamedTuple, Self
+from typing import Callable, Literal, NamedTuple
 
 
 class Vector(NamedTuple):
