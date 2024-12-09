@@ -2,247 +2,157 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"log"
-	"math"
+	"io"
+	"iter"
 	"os"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-type springState uint8
-type springStateSlice []springState
-type counts []int
-
-const (
-	ssNil springState = iota
-	ssUnknown
-	ssOperational
-	ssDamaged
-)
-
-type RecordEntry struct {
-	springs springStateSlice
-	counts  counts
+type record struct {
+	springs []rune
+	counts  []int
 }
 
-var data []RecordEntry
+func (r record) expand() record {
+	springs := make([]rune, 0, len(r.springs)*5+5)
+	counts := make([]int, 0, len(r.counts)*5)
 
-func (s springStateSlice) counts() (r counts) {
-	isOperational := (s[0] == ssOperational)
-	prev := 0
+	for range 5 {
+		springs = append(springs, r.springs...)
+		springs = append(springs, '?')
+		counts = append(counts, r.counts...)
+	}
 
-	for i, c := range s {
-		if c == ssOperational {
-			if isOperational == false {
-				r = append(r, i-prev)
-				isOperational = true
-			}
-		}
-		if slices.Contains([]springState{ssDamaged, ssUnknown}, c) {
-			if isOperational == true {
-				prev = i
-				isOperational = false
+	return record{springs[:len(springs)-1], counts}
+}
+
+func (r record) solve() int {
+	memo := memo{}
+	return memo.solve(append([]rune{}, r.springs...), append([]int{}, r.counts...), false)
+}
+
+type recordSlice []record
+
+func (rSlice recordSlice) expandIter() iter.Seq[record] {
+	return func(yield func(record) bool) {
+		for _, r := range rSlice {
+			if !yield(r.expand()) {
+				return
 			}
 		}
 	}
-
-	if isOperational == false {
-		r = append(r, len(s)-prev)
-	}
-
-	return
 }
 
-func (s springStateSlice) posUnknown() (r []int) {
-	for i, e := range s {
-		if e == ssUnknown {
-			r = append(r, i)
-		}
-	}
-	return
+type memoKey struct {
+	springsHash string
+	countsHash  string
+	active      bool
 }
 
-func permutations(l int) func() (r []bool, err error) {
-	i := 0
-	iMax := int(math.Pow(2, float64(l)))
+func newMemoKey(s []rune, c []int, active bool) memoKey {
+	springsHash := string(s)
+	countsHash := fmt.Sprint(c)
 
-	return func() ([]bool, error) {
-		c := i
-		if c == iMax {
-			return nil, errors.New("iteration reached end")
-		}
-
-		r := make([]bool, l)
-		pos := len(r) - 1
-		for c > 0 {
-			r[pos] = c%2 != 0
-			c = int(math.Floor(float64(c / 2)))
-			pos--
-		}
-		i++
-		return r, nil
-	}
+	return memoKey{springsHash, countsHash, active}
 }
 
-func (s springStateSlice) substitute(n []bool) (springStateSlice, error) {
-	pos := s.posUnknown()
-	if len(n) > len(pos) {
-		return nil, errors.New("size of substitution slice larger than SSUnkown")
+type memo map[memoKey]int
+
+func (m memo) solve(s []rune, c []int, active bool) int {
+	memoReturn := func(res int) int {
+		m[newMemoKey(s, c, active)] = res
+		return res
 	}
 
-	r := make(springStateSlice, len(s))
-	copy(r, s)
-
-	for i := range len(n) {
-		if n[i] == true {
-			r[pos[i]] = ssOperational
-		} else {
-			r[pos[i]] = ssDamaged
-		}
+	if res, ok := m[newMemoKey(s, c, active)]; ok {
+		return res
 	}
 
-	return r, nil
-}
-func (s springStateSlice) permutations() func() (springStateSlice, error) {
-	posUnknown := s.posUnknown()
-	permutationsIter := permutations(len(posUnknown))
-
-	return func() (springStateSlice, error) {
-		subPos, err := permutationsIter()
-		if err != nil {
-			return nil, err
-		}
-
-		subS, err := s.substitute(subPos)
-		if err != nil {
-			return nil, err
-		}
-
-		return subS, nil
+	if len(c) == 1 && c[0] == 0 {
+		c = []int{}
 	}
 
-}
-
-func verifyPermutation(i *int, p springStateSlice, c counts) {
-	if reflect.DeepEqual(p.counts(), c) {
-		*i++
+	if len(s) == 0 && len(c) > 0 {
+		return 0
 	}
-}
 
-func getspringState(c rune) (springState, error) {
-	switch c {
-	case '?':
-		return ssUnknown, nil
-	case '.':
-		return ssOperational, nil
+	if len(s) == 0 && len(c) == 0 {
+		return 1
+	}
+
+	switch s[0] {
 	case '#':
-		return ssDamaged, nil
-	default:
-		return ssNil, errors.New(fmt.Sprintf("unidentified spring state char %c", c))
+		if len(c) == 0 || (c[0] == 0 && active) {
+			return memoReturn(0)
+		}
+
+		c[0]--
+		active = true
+
+	case '.':
+		if active {
+			if len(c) > 0 {
+				if c[0] > 0 {
+					return memoReturn(0)
+				}
+
+				c = c[1:]
+			}
+		}
+
+		active = false
+
+	case '?':
+		damaged := m.solve(append([]rune{'#'}, s[1:]...), append([]int{}, c...), active)
+		operational := m.solve(append([]rune{'.'}, s[1:]...), append([]int{}, c...), active)
+
+		return memoReturn(damaged + operational)
+	}
+
+	return memoReturn(m.solve(s[1:], c, active))
+}
+
+var data = recordSlice{}
+
+func parseInput(r io.Reader) {
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		springsText := fields[0]
+		countsTextSlice := strings.Split(fields[1], ",")
+
+		counts := []int{}
+		for _, c := range countsTextSlice {
+			count, _ := strconv.Atoi(c)
+			counts = append(counts, count)
+		}
+
+		springs := []rune{}
+		for _, c := range springsText {
+			springs = append(springs, c)
+		}
+
+		data = append(data, record{springs, counts})
 	}
 }
 
-func getspringStateAll(s string) (r []springState, err error) {
-	for i, c := range s {
-		ss, err := getspringState(c)
-		if err != nil {
-			return r, errors.Join(
-				errors.New(fmt.Sprintf("error on char %d", i)),
-				err,
-			)
-		}
-
-		r = append(r, ss)
+func solve(rSlice iter.Seq[record]) (res int) {
+	for r := range rSlice {
+		res += r.solve()
 	}
 
 	return
-}
-
-func getCountAll(s string) (r []int, err error) {
-	for i, c := range strings.Split(s, ",") {
-		num, err := strconv.Atoi(c)
-		if err != nil {
-			return r, errors.Join(
-				errors.New(fmt.Sprintf("error converting %q at %d", c, i)),
-				err,
-			)
-		}
-
-		r = append(r, num)
-	}
-
-	return
-}
-
-func parseRecord(r string) error {
-	springStatesStr, countsStr, done := strings.Cut(r, " ")
-	if !done {
-		return errors.New("error cutting record string")
-	}
-
-	springStates, err := getspringStateAll(springStatesStr)
-	if err != nil {
-		return errors.Join(
-			errors.New(fmt.Sprintf("error processing springs: %q", springStatesStr)),
-			err,
-		)
-	}
-
-	counts, err := getCountAll(countsStr)
-	if err != nil {
-		return errors.Join(
-			errors.New(fmt.Sprintf("error processing counts: %q", countsStr)),
-			err,
-		)
-	}
-
-	data = append(data, RecordEntry{
-		springs: springStates,
-		counts:  counts,
-	})
-	return nil
-}
-
-func parseInput(s *bufio.Scanner) error {
-	for i := 1; s.Scan(); i++ {
-		err := parseRecord(s.Text())
-		if err != nil {
-			return errors.Join(
-				errors.New(fmt.Sprintf("error parsing line %d", i)),
-				err,
-			)
-		}
-	}
-
-	return s.Err()
 }
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	parseInput(os.Stdin)
 
-	err := parseInput(scanner)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	P1 := 0
-
-	for _, r := range data {
-		permFunc := r.springs.permutations()
-		for {
-			s, err := permFunc()
-			if err != nil {
-				break
-			}
-
-			verifyPermutation(&P1, s, r.counts)
-		}
-	}
-	P2 := 0
+	P1 := solve(slices.Values(data))
+	P2 := solve(data.expandIter())
 
 	fmt.Printf("P1: %d \n", P1)
 	fmt.Printf("P2: %d \n", P2)
