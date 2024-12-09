@@ -7,51 +7,73 @@ import (
 	"os"
 )
 
-type direction int
-
-const (
-	dUp direction = iota
-	dRight
-	dDown
-	dLeft
-)
-
-func (d direction) vector() [2]int {
-	switch d {
-	case dUp:
-		return [2]int{-1, 0}
-	case dRight:
-		return [2]int{0, 1}
-	case dDown:
-		return [2]int{1, 0}
-	case dLeft:
-		return [2]int{0, -1}
-	}
-
-	panic(fmt.Sprint("unknown direction: ", d))
-}
-
 type position [2]int
 
-func (p position) check() bool {
-	if (p[0] >= 0 && p[0] < len(data)) &&
-		(p[1] >= 0 && p[1] < len(data[0])) {
+type cursor struct {
+	position
+	vector [2]int
+}
+
+func (c *cursor) turn() {
+	c.vector = [2]int{c.vector[1], -c.vector[0]}
+}
+
+func (c cursor) nextPos() [2]int {
+	return [2]int{
+		c.position[0] + c.vector[0],
+		c.position[1] + c.vector[1]}
+}
+
+type region [][]bool
+
+func (r region) isMapped(pos [2]int) bool {
+	if (pos[0] >= 0 && pos[0] < len(r)) &&
+		(pos[1] >= 0 && pos[1] < len(r[pos[0]])) {
 		return true
 	}
 
 	return false
 }
 
-type cursor struct {
-	position
-	direction
+func (r region) solve() (visited map[[2]int]struct{}, isLoop bool) {
+	curr := start
+	visitedMap := map[[2]int]struct{}{}
+	seenObstacles := map[[2]int]map[[2]int]struct{}{}
+
+	for r.isMapped(curr.position) {
+		for nextPos := curr.nextPos(); r.isMapped(nextPos) && r[nextPos[0]][nextPos[1]]; nextPos = curr.nextPos() {
+			var seenVectors map[[2]int]struct{}
+
+			if v, ok := seenObstacles[nextPos]; !ok {
+				seenVectors = map[[2]int]struct{}{}
+				seenObstacles[nextPos] = seenVectors
+			} else {
+				seenVectors = v
+			}
+
+			if _, ok := seenVectors[curr.vector]; ok {
+				return visitedMap, true
+			}
+
+			seenVectors[curr.vector] = struct{}{}
+			curr.turn()
+		}
+
+		visitedMap[curr.position] = struct{}{}
+		curr.position = curr.nextPos()
+	}
+
+	return visitedMap, false
 }
 
-type region [][]bool
-
+func (r region) solveWithObstacle(pos [2]int) (visited map[[2]int]struct{}, isLoop bool) {
+	r[pos[0]][pos[1]] = true
+	visited, isLoop = r.solve()
+	r[pos[0]][pos[1]] = false
+	return
+}
 
 var data = region([][]bool{})
-
 var start = cursor{}
 
 func parse(r io.Reader) {
@@ -63,25 +85,24 @@ func parse(r io.Reader) {
 			if r == '#' {
 				row = append(row, true)
 			} else {
+				row = append(row, false)
+
 				if r == '.' {
-					goto appendRow
+					continue
 				}
 
 				switch r {
 				case '^':
-					start.direction = dUp
+					start.vector = [2]int{-1, 0}
 				case '>':
-					start.direction = dRight
+					start.vector = [2]int{0, +1}
 				case 'v':
-					start.direction = dDown
+					start.vector = [2]int{+1, 0}
 				case '<':
-					start.direction = dLeft
+					start.vector = [2]int{0, -1}
 				}
 
 				start.position = [2]int{i, j}
-
-			appendRow:
-				row = append(row, false)
 			}
 		}
 
@@ -89,43 +110,19 @@ func parse(r io.Reader) {
 	}
 }
 
-func solve() int {
-	curr := start
-	visitedMap := map[[2]int]struct{}{}
-
-	getNextPos := func() position {
-		return [2]int{
-			curr.position[0] + curr.vector()[0],
-			curr.position[1] + curr.vector()[1]}
-	}
-
-	for curr.check() {
-
-		if _, ok := visitedMap[curr.position]; !ok {
-			visitedMap[curr.position] = struct{}{}
-		}
-
-		if pos := getNextPos(); pos.check() {
-			if data[pos[0]][pos[1]] == true {
-				curr.direction = (curr.direction + 1) % 4
-			}
-		}
-
-		curr.position = getNextPos()
-	}
-
-	return len(visitedMap)
-}
-
-func countLoop() {
-	//TODO
-}
-
 func main() {
 	parse(os.Stdin)
 
-	P1 := solve()
+	visited, _ := data.solve()
+
+	P1 := len(visited)
+	
 	P2 := 0
+	for pos := range visited {
+		if _, isLoop := data.solveWithObstacle(pos); isLoop {
+			P2++
+		}
+	}
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)

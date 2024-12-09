@@ -1,6 +1,5 @@
 import fileinput
 from copy import copy
-from enum import IntEnum
 from typing import Callable, Literal, NamedTuple
 
 
@@ -9,74 +8,44 @@ class Vector(NamedTuple):
     c_col: Literal[-1, 0, +1]
 
 
-class Direction(IntEnum):
-    UP = 0
-    RIGHT = 1
-    DOWN = 2
-    LEFT = 3
-
-
 class Position(NamedTuple):
     row: int
     col: int
 
 
 class Cursor:
-    def __init__(self, pos: Position, direction: Direction):
-        self._position: Position = pos
-        match direction:
-            case Direction.UP:
-                self._vector = Vector(-1, 0)
-            case Direction.RIGHT:
-                self._vector = Vector(0, +1)
-            case Direction.DOWN:
-                self._vector = Vector(+1, 0)
-            case Direction.LEFT:
-                self._vector = Vector(0, -1)
-
-    @property
-    def position(self):
-        return self._position
-
-    @property
-    def vector(self):
-        return self._vector
+    def __init__(self, pos: Position, vector: Vector):
+        self.position: Position = pos
+        self.vector = vector
 
     def turn(self):
-        self._vector = Vector(self._vector.c_col, -self._vector.c_row)
+        self.vector = Vector(self.vector.c_col, -self.vector.c_row)
 
-    def step(self):
-        row, col = self._position
-        c_row, c_col = self._vector
-        self._position = Position(row + c_row, col + c_col)
+    def next_pos(self) -> Position:
+        row, col = self.position
+        c_row, c_col = self.vector
+        return Position(row + c_row, col + c_col)
 
 
 class Region(list[list[bool]]):
     def guard_path(self, curr: Cursor) -> tuple[set[Position], bool]:
         curr = copy(curr)
         res: set[Position] = set()
-        obstacles: dict[Position, list[Vector]] = {}
+        obstacles: dict[Position, set[Vector]] = {}
 
-        while (0 <= (row := curr.position.row) < len(self)) and (
-            0 <= (col := curr.position.col) < len(self[row])
-        ):
-            while (
-                0 <= (n_row := row + curr.vector.c_row) < len(self)
-                and 0 <= (n_col := col + curr.vector.c_col) < len(self[n_row])
-                and self[n_row][n_col]
-            ):
+        def is_inside(pos: Position) -> bool:
+            return 0 <= pos.row < len(self) and 0 <= pos.col < len(self[pos.row])
 
-                pos = Position(n_row, n_col)
-                obstacles.setdefault(pos, [])
-
-                if curr.vector in obstacles[pos]:
+        while is_inside(curr.position):
+            while is_inside(n_pos := curr.next_pos()) and self[n_pos.row][n_pos.col]:
+                if curr.vector in (seen_vectors := obstacles.setdefault(n_pos, set())):
                     return res, True
 
-                obstacles[pos].append(curr.vector)
+                seen_vectors.add(curr.vector)
                 curr.turn()
 
             res.add(curr.position)
-            curr.step()
+            curr.position = n_pos
 
         return res, False
 
@@ -90,24 +59,31 @@ class Region(list[list[bool]]):
 start: Cursor | None = None
 data: Region = Region()
 
-CURSOR_SYM: dict[str, Direction] = {
-    "^": Direction.UP,
-    ">": Direction.RIGHT,
-    "v": Direction.DOWN,
-    "<": Direction.LEFT,
-}
-
 with fileinput.input() as file:
     for i, line in enumerate(file):
         parsed_line: list[bool] = []
-        for j, c in enumerate(line):
+        for j, c in enumerate(line[:-1]):
             if c == "#":
                 parsed_line.append(True)
             else:
                 parsed_line.append(False)
 
-            if c in ["^", ">", "<", "v"]:
-                start = Cursor(Position(i, j), CURSOR_SYM[c])
+                if c == ".":
+                    continue
+
+                match c:
+                    case "^":
+                        vec = Vector(-1, 0)
+                    case ">":
+                        vec = Vector(0, +1)
+                    case "v":
+                        vec = Vector(+1, 0)
+                    case "<":
+                        vec = Vector(0, -1)
+                    case _:
+                        raise AssertionError(f"unparsable char: {c}")
+
+                start = Cursor(Position(i, j), vec)
 
         data.append(parsed_line)
 
@@ -115,4 +91,6 @@ assert isinstance(start, Cursor)
 guard_pos, _ = data.guard_path(start)
 
 print(f"P1: {len(guard_pos)}")
-print(f"P2: {[data.set_obstacle(pos, data.guard_path,start)[1] for pos in guard_pos].count(True)}")
+print(
+    f"P2: {[data.set_obstacle(pos, data.guard_path,start)[1] for pos in guard_pos].count(True)}"
+)
