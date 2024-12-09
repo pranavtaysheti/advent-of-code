@@ -1,8 +1,8 @@
 import fileinput
 from copy import copy
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar
 from enum import IntEnum
-from typing import Literal, NamedTuple
+from typing import Callable, Literal, NamedTuple, Self
 
 
 class Vector(NamedTuple):
@@ -22,48 +22,48 @@ class Position(NamedTuple):
     col: int
 
 
-@dataclass
 class Cursor:
-    position: Position
-    direction: InitVar[Direction]
-
-    def __post_init__(self, direction):
+    def __init__(self, pos: Position, direction: Direction):
+        self._position: Position = pos
         match direction:
             case Direction.UP:
-                self.vector = Vector(-1, 0)
+                self._vector = Vector(-1, 0)
             case Direction.RIGHT:
-                self.vector = Vector(0, +1)
+                self._vector = Vector(0, +1)
             case Direction.DOWN:
-                self.vector = Vector(+1, 0)
+                self._vector = Vector(+1, 0)
             case Direction.LEFT:
-                self.vector = Vector(0, -1)
+                self._vector = Vector(0, -1)
+
+    @property
+    def position(self):
+        return self._position
+
+    @property
+    def vector(self):
+        return self._vector
 
     def turn(self):
-        self.vector = Vector(self.vector.c_col, -self.vector.c_row)
+        self._vector = Vector(self._vector.c_col, -self._vector.c_row)
 
     def step(self):
-        row, col = self.position
-        c_row, c_col = self.vector
-        self.position = Position(row + c_row, col + c_col)
+        row, col = self._position
+        c_row, c_col = self._vector
+        self._position = Position(row + c_row, col + c_col)
 
 
 class Region(list[list[bool]]):
-    def is_mapped(self, row: int, col: int):
-        return 0 <= row < len(self) and 0 <= col < len(self[0])
-
-    def guard_path(self) -> tuple[set[Position], bool]:
-        assert isinstance(start, Cursor)
-        curr: Cursor = copy(start)
-
+    def guard_path(self, curr: Cursor) -> tuple[set[Position], bool]:
+        curr = copy(curr)
         res: set[Position] = set()
         obstacles: dict[Position, list[Vector]] = {}
 
-        while self.is_mapped(row := curr.position.row, col := curr.position.col):
+        while (0 <= (row := curr.position.row) < len(self)) and (
+            0 <= (col := curr.position.col) < len(self[row])
+        ):
             while (
-                self.is_mapped(
-                    n_row := row + curr.vector.c_row,
-                    n_col := col + curr.vector.c_col,
-                )
+                0 <= (n_row := row + curr.vector.c_row) < len(self)
+                and 0 <= (n_col := col + curr.vector.c_col) < len(self[n_row])
                 and self[n_row][n_col]
             ):
 
@@ -80,6 +80,12 @@ class Region(list[list[bool]]):
             curr.step()
 
         return res, False
+
+    def set_obstacle(self, pos: Position, func: Callable, *args, **kwargs):
+        self[pos.row][pos.col] = True
+        res = func(*args, **kwargs)
+        self[pos.row][pos.col] = False
+        return res
 
 
 start: Cursor | None = None
@@ -107,17 +113,7 @@ with fileinput.input() as file:
         data.append(parsed_line)
 
 assert isinstance(start, Cursor)
+guard_pos, _ = data.guard_path(start)
 
-guard_pos, _ = data.guard_path()
 print(f"P1: {len(guard_pos)}")
-
-P2 = 0
-for row, col in guard_pos:
-    if (row, col) == start.position:
-        continue
-
-    data[row][col] = True
-    P2 += data.guard_path()[1]
-    data[row][col] = False
-
-print(f"P2: {P2}")
+print(f"P2: {[data.set_obstacle(pos, data.guard_path,start)[1] for pos in guard_pos].count(True)}")
