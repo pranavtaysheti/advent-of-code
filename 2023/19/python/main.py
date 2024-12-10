@@ -1,8 +1,13 @@
+from __future__ import annotations
+
+from curses import nonl
 import fileinput
+from collections.abc import Generator
 from copy import copy
 from fileinput import FileInput
 from itertools import takewhile
-from typing import Literal, NamedTuple, Self
+from math import prod
+from typing import Literal, NamedTuple
 
 type Action = str | bool
 
@@ -32,6 +37,20 @@ class Condition(NamedTuple):
 
         return False
 
+    def split(self, part_range: PartRange) -> tuple[PartRange, PartRange]:
+        accept, reject = copy(part_range), copy(part_range)
+        o_range = part_range[self.category]
+
+        match self.operator:
+            case "<":
+                accept[self.category] = Range(o_range.low, self.limit - 1)
+                reject[self.category] = Range(self.limit, o_range.high)
+            case ">":
+                accept[self.category] = Range(self.limit + 1, o_range.high)
+                reject[self.category] = Range(o_range.low, self.limit)
+
+        return accept, reject
+
 
 class Rule(NamedTuple):
     condition: Condition | None
@@ -48,19 +67,26 @@ class Range(NamedTuple):
 
 
 class PartRange(dict[str, Range]):
-    def split(self, condition: Condition) -> tuple[Self, Self]:
-        accept, reject = copy(self), copy(self)
+    def score(self) -> int:
+        return prod(high - low + 1 for low, high in self.values())
 
-        o_range = self[condition.category]
-        match condition.operator:
-            case "<":
-                accept[condition.category] = Range(o_range.low, condition.limit - 1)
-                reject[condition.category] = Range(condition.limit, o_range.high)
-            case ">":
-                accept[condition.category] = Range(condition.limit + 1, o_range.high)
-                reject[condition.category] = Range(o_range.low, condition.limit)
+    def solve(self) -> list[PartRange]:
+        acceptables: list[PartRange] = []
 
-        return accept, reject
+        def solve_workflow(workflow: WorkFlow):
+            nonlocal self
+
+            for self, action in workflow.sovle(self):
+                print(self, action)
+
+                if action is True:
+                    acceptables.append(self)
+
+                if isinstance(action, str):
+                    solve_workflow(workflows[action])
+
+        solve_workflow(workflows["in"])
+        return acceptables
 
 
 class WorkFlow(list[Rule]):
@@ -70,6 +96,16 @@ class WorkFlow(list[Rule]):
                 return res
 
         raise AssertionError("Non redirecting or terminating workflow")
+
+    def sovle(self, part_range: PartRange) -> Generator[tuple[PartRange, Action]]:
+        for condition, action in self:
+            if condition is None:
+                accept = part_range
+            
+            else:
+                accept, part_range = condition.split(part_range)
+            
+            yield accept, action
 
 
 workflows: dict[str, WorkFlow] = {}
@@ -123,8 +159,12 @@ def parse_input(file: FileInput[str]):
 
 parse_input(fileinput.input(encoding="utf-8"))
 
-P1 = sum(p.score() for p in parts if p.check())
-P2 = 0
-
-print(f"P1: {P1}")
-print(f"P2: {P2}")
+print(f"P1: {sum(p.score() for p in parts if p.check())}")
+print(
+    f"P2: {sum(pr.score() for pr in PartRange({
+    "x": Range(1, 4000),
+    'm': Range(1, 4000),
+    'a': Range(1, 4000),
+    's': Range(1, 4000),
+}).solve())}"
+)
