@@ -58,7 +58,7 @@ func (s *disk) fragment() {
 
 func (s *disk) checksum() (res int) {
 	for i, id := range diskState.expanded {
-		res += i*id
+		res += i * id
 	}
 
 	return
@@ -77,6 +77,8 @@ func main() {
 	diskState.fragment()
 
 	P1 := diskState.checksum()
-	
+	P2 := 0
+
 	fmt.Printf("P1: %d\n", P1)
+	fmt.Printf("P2: %d\n", P2)
 }
