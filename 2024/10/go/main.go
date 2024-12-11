@@ -9,7 +9,7 @@ import (
 
 type topography [][]int
 
-func (t topography) score(pos [2]int) (res int) {
+func (t topography) score(pos [2]int) (score int, rating int) {
 	vectors := [][2]int{{-1, 0}, {0, +1}, {+1, 0}, {0, -1}}
 	seen := map[[2]int]struct{}{}
 
@@ -27,13 +27,15 @@ func (t topography) score(pos [2]int) (res int) {
 
 			next := t[n_row][n_col]
 
-
 			if next == curr+1 {
+
 				if next == 9 {
 					if _, ok := seen[[2]int{n_row, n_col}]; !ok {
-						res += 1
-						seen[[2]int{n_row,n_col}] = struct{}{}
+						seen[[2]int{n_row, n_col}] = struct{}{}
+						score++
 					}
+
+					rating++
 				} else {
 					poi = append(poi, [2]int{n_row, n_col})
 				}
@@ -45,9 +47,11 @@ func (t topography) score(pos [2]int) (res int) {
 	return
 }
 
-func (t topography) solve() (res int) {
+func (t topography) solve() (score int, rating int) {
 	for pos := range starts {
-		res += t.score(pos)
+		n_score, n_rating := t.score(pos)
+		score += n_score
+		rating += n_rating
 	}
 
 	return
@@ -73,8 +77,10 @@ func parse(r io.Reader) {
 
 func main() {
 	parse(os.Stdin)
-	P1 := data.solve()
-	P2 := 0
+	score, rating := data.solve()
+
+	P1 := score
+	P2 := rating
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
