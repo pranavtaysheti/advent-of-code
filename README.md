@@ -1,19 +1,14 @@
 # Advent Of Code
 
-## Go
+## Requirements
 
-Version: 1.23
+- OS: Any Linux 🐧 / Mac / WSL
+- Python (>= 3.12)
+- Go (>= 1.23)
+- `Requests` Python Module
 
-```bash
-cd go
-cat ../input.txt | go run main.go
-```
-
-## Python
-
-Version: 3.12
+## Usage
 
 ```bash
-cd python
-cat ../input.txt | python main.py
+python aoc.py -y <year> -d <day>
 ```
