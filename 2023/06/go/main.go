@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -8,7 +9,6 @@ import (
 	"strings"
 )
 
-var input = make([]byte, 1024)
 var data_p1 = make([]Race, 4)
 var data_p2 = Race{}
 var p1_sol = 1
@@ -42,9 +42,15 @@ func parseNumbers(l *string) (result []int) {
 }
 
 func parseInput() {
-	lines := strings.Split(string(input), "\n")
-	times := parseNumbers(&lines[0])
-	distances := parseNumbers(&lines[1])
+	input := [2]string{}
+	scanner := bufio.NewScanner(os.Stdin)
+
+	for i := 0; scanner.Scan(); i++ {
+		input[i] = scanner.Text()
+	}
+
+	times := parseNumbers(&input[0])
+	distances := parseNumbers(&input[1])
 
 	for i := 0; i < len(times); i++ {
 		data_p1[i] = Race{
@@ -53,22 +59,13 @@ func parseInput() {
 		}
 	}
 
-	timeConcat, _ := concatNumbers(parseNumberFields(&lines[0]))
-	distanceConcat, _ := concatNumbers(parseNumberFields(&lines[1]))
+	timeConcat, _ := concatNumbers(parseNumberFields(&input[0]))
+	distanceConcat, _ := concatNumbers(parseNumberFields(&input[1]))
 
 	data_p2 = Race{
 		time:     timeConcat,
 		distance: distanceConcat,
 	}
-}
-
-func readInput() {
-	input_temp, err := os.ReadFile("./input.txt")
-	if err != nil {
-		panic("Cannot read input file")
-	}
-
-	input = input_temp
 }
 
 func calcPeakHold(t int) float64 {
@@ -110,16 +107,14 @@ func solveP1() {
 }
 
 func solveP2() {
-	fmt.Println(data_p2)
 	t, d := data_p2.time, data_p2.distance
 	p2_sol = calcWaysToBeatRecord(t, d)
 }
 
 func main() {
-	readInput()
 	parseInput()
 	solveP1()
 	solveP2()
-	fmt.Println("P1: ", p1_sol)
-	fmt.Println("P2: ", p2_sol)
+	fmt.Println("P1:", p1_sol)
+	fmt.Println("P2:", p2_sol)
 }

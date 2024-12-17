@@ -77,8 +77,6 @@ class PartRange(dict[str, Range]):
             nonlocal self
 
             for self, action in workflow.sovle(self):
-                print(self, action)
-
                 if action is True:
                     acceptables.append(self)
 
