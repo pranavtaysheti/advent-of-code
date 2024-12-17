@@ -1,7 +1,7 @@
 import argparse
 import os
 import subprocess
-from os import DirEntry, path
+from os import path
 
 import requests
 
@@ -39,7 +39,7 @@ def set_day(entry: str):
             input_file.write(get_input())
 
 
-def test_day(entry: str):
+def test_day(entry: str, lang: str | None = None):
     def test_lang(args: list[str], file: str):
         if not path.exists(f"{entry}/{file}"):
             print(f"File {entry}/{file} is Missing")
@@ -58,26 +58,49 @@ def test_day(entry: str):
         "go": (["go", "run"], "/go/main.go"),
     }
 
-    for k, v in lang_matrix.items():
-        if k in os.listdir(entry):
-            test_lang(*v)
+    if lang == None:
+        for k, v in lang_matrix.items():
+            if k in os.listdir(entry):
+                test_lang(*v)
+
+    else:
+        test_lang(*lang_matrix[lang])
 
 
 """ Argument Parsing """
 
+
+def run(year: str, day: str, no_run: bool, lang: str | None = None):
+    if year not in os.listdir(path.curdir):
+        print(f"Solution for {year} is not available")
+        return
+
+    if day not in os.listdir(f"{path.curdir}/{year}"):
+        print(f"Solution for {year}/{day} is not available")
+        return
+
+    set_day(f"{path.curdir}/{year}/{day}")
+
+    if not no_run:
+        test_day(f"{path.curdir}/{year}/{day}", lang)
+        
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument("year", help="year of the problem")
-parser.add_argument("day", help="day of the problem")
+parser.add_argument("-y", "--year", help="year of the problem")
+parser.add_argument("-d", "--day", help="day of the problem")
+
+parser.add_argument(
+    "-n", "--norun", help="only downloads the input.txt", action="store_true"
+)
+parser.add_argument("-p", "--file", help="runs file on given path", type=str)
 
 args = parser.parse_args()
 
-if args.year not in os.listdir(path.curdir):
-    print(f"Solution for {args.year} is not available")
-    exit()
+if not args.file:
+    run(args.year, args.day, args.norun)
 
-if args.day not in os.listdir(f"{path.curdir}/{args.year}"):
-    print(f"Solution for {args.year}/{args.day} is not available")
-    exit()
-
-set_day(f"{path.curdir}/{args.year}/{args.day}")
-test_day(f"{path.curdir}/{args.year}/{args.day}")
+else:
+    path_list = args.file.split("/")
+    year, day, lang = path_list[-4], path_list[-3], path_list[-2]
+    run(year, day, args.norun, lang)
