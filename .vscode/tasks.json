@@ -34,7 +34,10 @@
 				"-p",
 				"${relativeFile}"
 			],
-			"group": "test",
+			"group": {
+				"kind": "test",
+				"isDefault": true,
+			},
 			"detail": "Runs file using aoc.py runner"
 		}
 	]
