@@ -1,12 +1,5 @@
 # Advent Of Code
 
-## Requirements
-
-- OS: Any Linux 🐧 / Mac / WSL
-- Python (>= 3.13)
-- Go (>= 1.23)
-- [requests](https://pypi.org/project/requests/)
-
 ## Usage
 
 Create a `.env` file in this folder with following content:
