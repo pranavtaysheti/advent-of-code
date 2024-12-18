@@ -20,9 +20,5 @@
 		],
 		"deno.enable": true,
 		"python.defaultInterpreterPath": "python3.12",
-		"code-runner.executorMap": {
-        	"python": "python aoc.py -p $fullFileName",
-        	"go": "python aoc.py -p $fullFileName"
-		},
 	}
 }

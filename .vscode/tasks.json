@@ -1,26 +1,41 @@
 {
 	"version": "2.0.0",
 	"tasks": [
+		// {
+		// 	"type": "cppbuild",
+		// 	"label": "C/C++: clang++ build active file",
+		// 	"command": "clang++",
+		// 	"args": [
+		// 		"-fcolor-diagnostics",
+		// 		"-fansi-escape-codes",
+		// 		"-g",
+		// 		"${file}",
+		// 		"-o",
+		// 		"${fileDirname}/${fileBasenameNoExtension}.out"
+		// 	],
+		// 	"options": {
+		// 		"cwd": "${fileDirname}"
+		// 	},
+		// 	"problemMatcher": [
+		// 		"$gcc"
+		// 	],
+		// 	"group": "build",
+		// 	"detail": "compiler: /usr/bin/clang++"
+		// }
 		{
-			"type": "cppbuild",
-			"label": "C/C++: clang++ build active file",
-			"command": "clang++",
-			"args": [
-				"-fcolor-diagnostics",
-				"-fansi-escape-codes",
-				"-g",
-				"${file}",
-				"-o",
-				"${fileDirname}/${fileBasenameNoExtension}.out"
-			],
+			"type": "shell",
+			"label": "AOC Run",
+			"command": "python",
 			"options": {
-				"cwd": "${fileDirname}"
+				"cwd": "${workspaceFolder}"
 			},
-			"problemMatcher": [
-				"$gcc"
+			"args": [
+				"aoc.py",
+				"-p",
+				"${relativeFile}"
 			],
-			"group": "build",
-			"detail": "compiler: /usr/bin/clang++"
+			"group": "test",
+			"detail": "Runs file using aoc.py runner"
 		}
 	]
 }
