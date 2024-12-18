@@ -18,6 +18,5 @@
 			"--profile",
 			"black"
 		],
-		"deno.enable": true,
 	}
 }
