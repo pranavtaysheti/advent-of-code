@@ -3,9 +3,9 @@
 ## Requirements
 
 - OS: Any Linux 🐧 / Mac / WSL
-- Python (>= 3.12)
+- Python (>= 3.13)
 - Go (>= 1.23)
-- `Requests` Python Module
+- [requests](https://pypi.org/project/requests/)
 
 ## Usage
 
