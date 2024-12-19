@@ -16,7 +16,10 @@
 		// Configure properties specific to VS Code.
 		"vscode": {
 			"settings": {},
-			"extensions": []
+			"extensions": [
+				"ms-python.black-formatter",
+				"ms-python.isort"
+			]
 		}
 	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

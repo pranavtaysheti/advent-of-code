@@ -1,30 +1,56 @@
 import argparse
 import os
 import subprocess
-from os import path
+from typing import NamedTuple
 
 import requests
 
-""" Set Environment """
+CODE_PATH_FORMAT = "{year}/{day}/{lang}/main.{ext}"
+INPUT_PATH_FORMAT = "{year}/{day}/"
 
-with open(".env") as env_file:
-    for line in env_file:
-        key, value = line.split("=", 1)
-        os.environ[key] = value
+N_YEAR_POS, N_DAY_POS = None, None
+for i, dir in enumerate(s := CODE_PATH_FORMAT.split("/")):
+    if "{year}" == dir:
+        N_YEAR_POS = i - len(s)
 
-""" Test Solutions """
+    if "{day}" == dir:
+        N_DAY_POS = i - len(s)
 
 
-def set_day(entry: str):
-    _, year, day = entry.split("/")
+class UnknownExtension(ValueError):
+    def __init__(self, ext: str):
+        self.ext = ext
+        super().__init__()
 
+
+class LangValue(NamedTuple):
+    command: list[str]
+    extension: str
+
+
+class LangInfo(dict[str, LangValue]):
+    def file_lang(self, file_name: str) -> LangValue:
+        *_, ext = file_name.split(".")
+
+        for v in lang_info.values():
+            if ext == v.extension:
+                return v
+
+        raise UnknownExtension(ext)
+
+
+lang_info = LangInfo(
+    {
+        "python": LangValue(["python"], "py"),
+        "go": LangValue(["go", "run"], "go"),
+    }
+)
+
+
+def download_input(year: str, day: str) -> str:
     def get_input() -> str:
-        aoc_day = day
-        if aoc_day[0] == "0":
-            aoc_day = aoc_day[1:]
-
         response = requests.get(
-            url=f"https://adventofcode.com/{year}/day/{aoc_day}/input",
+            url=f"https://adventofcode.com/{year}/day/{day.lstrip("0")}/input",
             cookies={
                 "session": os.environ["AOC_SESSION"],
             },
@@ -32,75 +58,64 @@ def set_day(entry: str):
 
         return str(response.content, encoding="utf8")
 
-    if "input.txt" not in os.listdir(entry):
-        print(f"Downloading Input File for {entry}")
+    input_dir = f"{os.curdir}/{INPUT_PATH_FORMAT.format(year=year, day=day)}"
+    input_path = f"{input_dir}/input.txt"
 
-        with open(f"{entry}/input.txt", "w") as input_file:
+    if "input.txt" not in os.listdir(input_dir):
+        print(f"Downloading Input file at {input_dir}")
+
+        with open(input_path, "w") as input_file:
             input_file.write(get_input())
 
-
-def test_day(entry: str, lang: str | None = None):
-    def test_lang(args: list[str], file: str):
-        if not path.exists(f"{entry}/{file}"):
-            print(f"File {entry}/{file} is Missing")
-            return
-
-        print(f"{args[0].title()} Solution:")
-        print("-----------------------------")
-
-        with open(f"{entry}/input.txt") as input_file:
-            subprocess.run([*args, f"{entry}/{file}"], stdin=input_file)
-
-        print()
-
-    lang_matrix = {
-        "python": (["python"], "/python/main.py"),
-        "go": (["go", "run"], "/go/main.go"),
-    }
-
-    if lang == None:
-        for k, v in lang_matrix.items():
-            if k in os.listdir(entry):
-                test_lang(*v)
-
-    else:
-        test_lang(*lang_matrix[lang])
+    return input_path
 
 
-""" Argument Parsing """
+def aoc_run(code_path: str, year: str, day: str):
+    with open(code_path):
+        print(f"Running: {code_path}")
 
-
-def run(year: str, day: str, no_run: bool, lang: str | None = None):
-    if year not in os.listdir(path.curdir):
-        print(f"Solution for {year} is not available")
-        return
-
-    if day not in os.listdir(f"{path.curdir}/{year}"):
-        print(f"Solution for {year}/{day} is not available")
-        return
-
-    set_day(f"{path.curdir}/{year}/{day}")
-
-    if not no_run:
-        test_day(f"{path.curdir}/{year}/{day}", lang)
-        
+    command = lang_info.file_lang(code_path).command
+    with open(download_input(year, day), "r") as input_file:
+        subprocess.run([*command, code_path], stdin=input_file)
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--year", help="year of the problem")
 parser.add_argument("-d", "--day", help="day of the problem")
-
-parser.add_argument(
-    "-n", "--norun", help="only downloads the input.txt", action="store_true"
-)
+parser.add_argument("-l", "--lang", help="language of solution")
 parser.add_argument("-p", "--file", help="runs file on given path", type=str)
 
 args = parser.parse_args()
 
-if not args.file:
-    run(args.year, args.day, args.norun)
+with open(".env") as env_file:  # Set Environment
+    for line in env_file:
+        key, value = line.split("=", 1)
+        os.environ[key] = value
 
-else:
-    path_list = args.file.split("/")
-    year, day, lang = path_list[-4], path_list[-3], path_list[-2]
-    run(year, day, args.norun, lang)
+try:
+    if args.file:
+        code_path_crumbs = args.file.split("/")
+        year = code_path_crumbs[N_YEAR_POS]
+        day = code_path_crumbs[N_DAY_POS]
+
+        aoc_run(args.file, year, day)
+
+    else:
+        if (args.year is None) or (args.day is None) or (args.lang is None):
+            print("Requires -y, -d and -l flag to be set")
+
+        else:
+            code_path = CODE_PATH_FORMAT.format(
+                year=args.year,
+                day=args.day,
+                lang=args.lang,
+                ext=lang_info[args.lang].extension,
+            )
+
+            aoc_run(code_path, args.year, args.day)
+
+except FileNotFoundError as e:
+    print(f"file {e.filename} doesnt exist")
+
+except UnknownExtension as e:
+    print(f"format not supported: {e.ext} format")
