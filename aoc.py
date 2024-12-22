@@ -8,13 +8,13 @@ import requests
 CODE_PATH_FORMAT = "{year}/{day}/{lang}/main.{ext}"
 INPUT_PATH_FORMAT = "{year}/{day}/"
 
-N_YEAR_POS, N_DAY_POS = None, None
-for i, dir in enumerate(s := CODE_PATH_FORMAT.split("/")):
-    if "{year}" == dir:
-        N_YEAR_POS = i - len(s)
 
-    if "{day}" == dir:
-        N_DAY_POS = i - len(s)
+def parse_year(p: str) -> str:
+    return p.split("/")[-4]
+
+
+def parse_day(p: str) -> str:
+    return p.split("/")[-3]
 
 
 class UnknownExtension(ValueError):
@@ -94,9 +94,8 @@ with open(".env") as env_file:  # Set Environment
 
 try:
     if args.file:
-        code_path_crumbs = args.file.split("/")
-        year = code_path_crumbs[N_YEAR_POS]
-        day = code_path_crumbs[N_DAY_POS]
+        year = parse_year(args.file)
+        day = parse_day(args.file)
 
         aoc_run(args.file, year, day)
 
