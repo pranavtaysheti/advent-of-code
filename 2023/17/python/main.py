@@ -56,9 +56,10 @@ class City:
         dir: Direction
         l_stp: int
 
-    class Seen(dict[tuple[Position, Orientation], int]):
-        def __init__(self, min_turn: int):
+    class Seen(dict[tuple[Position, Orientation], tuple[int, set[int]]]):
+        def __init__(self, min_turn: int, max_linear: int):
             self.min_turn = min_turn
+            self.max_linear = max_linear
             super().__init__()
 
         def evaluate(
@@ -70,25 +71,39 @@ class City:
             """
 
             if (v := (pos, dir.orientation())) in self:
-                if l_stp >= self[v]:
+                if l_stp >= self[v][0]:
                     return False, False
 
                 else:
                     if l_stp >= self.min_turn:
-                        self[v] = l_stp
+                        self[v] = l_stp, self[v][1]
+
+                    else:
+                        if l_stp in self[v][1]:
+                            return False, False
+
+                        self[v][1].add(l_stp)
 
                     return False, True
 
             else:
                 if l_stp >= self.min_turn:
-                    self[v] = l_stp
-                return True, True
+                    self[v] = l_stp, set()
+
+                    if l_stp == self.max_linear:
+                        return True, False
+
+                    return True, True
+
+                else:
+                    self[v] = self.max_linear, set([l_stp])
+                    return False, True
 
     layout: list[list[int]]
 
     def solve(self, min_turn: int, max_linear: int) -> int:
         heap: list[City.HeapItem] = []
-        seen: City.Seen = self.Seen(min_turn)
+        seen: City.Seen = self.Seen(min_turn, max_linear)
 
         heappush(heap, self.HeapItem(0, Position(0, 0), Direction.RIGHT, 0))
 
@@ -100,11 +115,11 @@ class City:
             to_turn, to_continue = seen.evaluate(*curr[1:])
             next: list[tuple[Position, Direction, int]] = []
 
-            if to_turn and curr.l_stp >= min_turn:
+            if to_turn:
                 for d in curr.dir.turn():
                     next.append((curr.pos.add_vector(d.vector()), d, 1))
 
-            if to_continue and curr.l_stp < max_linear:
+            if to_continue:
                 next.append(
                     (curr.pos.add_vector(curr.dir.vector()), curr.dir, curr.l_stp + 1)
                 )
