@@ -1,27 +1,6 @@
 {
 	"version": "2.0.0",
 	"tasks": [
-		// {
-		// 	"type": "cppbuild",
-		// 	"label": "C/C++: clang++ build active file",
-		// 	"command": "clang++",
-		// 	"args": [
-		// 		"-fcolor-diagnostics",
-		// 		"-fansi-escape-codes",
-		// 		"-g",
-		// 		"${file}",
-		// 		"-o",
-		// 		"${fileDirname}/${fileBasenameNoExtension}.out"
-		// 	],
-		// 	"options": {
-		// 		"cwd": "${fileDirname}"
-		// 	},
-		// 	"problemMatcher": [
-		// 		"$gcc"
-		// 	],
-		// 	"group": "build",
-		// 	"detail": "compiler: /usr/bin/clang++"
-		// }
 		{
 			"type": "shell",
 			"label": "AOC Run",
@@ -36,9 +15,25 @@
 			],
 			"group": {
 				"kind": "test",
-				"isDefault": true,
+				"isDefault": true
 			},
 			"detail": "Runs file using aoc.py runner"
+		},
+		{
+			"type": "shell",
+			"label": "AOC Download",
+			"command": "${command:python.interpreterPath}",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args": [
+				"aoc.py",
+				"-p",
+				"${relativeFile}",
+				"--norun"
+			],
+			"detail": "Downloads input.txt from AOC website",
+			"problemMatcher": []
 		}
 	]
 }

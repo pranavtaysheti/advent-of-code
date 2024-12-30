@@ -76,13 +76,16 @@ def download_input(year: str, day: str) -> str:
     return input_path
 
 
-def aoc_run(code_path: str, year: str, day: str):
+def aoc_run(code_path: str, year: str, day: str, norun: bool = False):
     with open(code_path):
         print(f"Running: {code_path}")
 
-    command = lang_info.file_lang(code_path).command
-    with open(download_input(year, day), "r") as input_file:
-        subprocess.run([*command, code_path], stdin=input_file)
+    input_path = download_input(year, day)
+
+    if not norun:
+        command = lang_info.file_lang(code_path).command
+        with open(input_path, "r") as input_file:
+            subprocess.run([*command, code_path], stdin=input_file)
 
 
 parser = argparse.ArgumentParser()
@@ -90,6 +93,9 @@ parser.add_argument("-y", "--year", help="year of the problem")
 parser.add_argument("-d", "--day", help="day of the problem")
 parser.add_argument("-l", "--lang", help="language of solution")
 parser.add_argument("-p", "--file", help="runs file on given path", type=str)
+parser.add_argument(
+    "-n", "--norun", help="only downloads input, doesnt run", action="store_true"
+)
 
 args = parser.parse_args()
 
@@ -101,14 +107,12 @@ if ".env" in os.listdir(os.curdir):
 
 try:
     if args.file:
-        year = parse_year(args.file)
-        day = parse_day(args.file)
-
-        aoc_run(args.file, year, day)
+        year, day = parse_year(args.file), parse_day(args.file)
 
     else:
         if (args.year is None) or (args.day is None) or (args.lang is None):
-            print("Requires -y, -d and -l flag to be set")
+            raise AssertionError("Requires -y, -d and -l flag to be set")
+            # TODO: Better error handling
 
         else:
             code_path = CODE_PATH_FORMAT.format(
@@ -118,7 +122,9 @@ try:
                 ext=lang_info[args.lang].extension,
             )
 
-            aoc_run(code_path, args.year, args.day)
+            year, day = args.year, args.day
+
+    aoc_run(args.file, year, day, args.norun)
 
 except FileNotFoundError as e:
     print(f"file {e.filename} doesnt exist")
