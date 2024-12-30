@@ -5,6 +5,8 @@ from typing import NamedTuple
 
 import requests
 
+FAIL_COLOUR = "\033[91m"
+
 CODE_PATH_FORMAT = "{year}/{day}/{lang}/main.{ext}"
 INPUT_PATH_FORMAT = "{year}/{day}/"
 
@@ -21,6 +23,9 @@ class UnknownExtension(ValueError):
     def __init__(self, ext: str):
         self.ext = ext
         super().__init__()
+
+
+class EnvVarError(KeyError): ...
 
 
 class LangValue(NamedTuple):
@@ -64,8 +69,9 @@ def download_input(year: str, day: str) -> str:
     if "input.txt" not in os.listdir(input_dir):
         print(f"Downloading Input file at {input_dir}")
 
+        input_data = get_input()
         with open(input_path, "w") as input_file:
-            input_file.write(get_input())
+            input_file.write(input_data)
 
     return input_path
 
@@ -87,10 +93,11 @@ parser.add_argument("-p", "--file", help="runs file on given path", type=str)
 
 args = parser.parse_args()
 
-# with open(".env") as env_file:  # Set Environment
-#     for line in env_file:
-#         key, value = line.split("=", 1)
-#         os.environ[key] = value
+if ".env" in os.listdir(os.curdir):
+    with open(".env") as env_file:  # Set Environment
+        for line in env_file:
+            key, value = line.split("=", 1)
+            os.environ[key] = value
 
 try:
     if args.file:
@@ -118,3 +125,7 @@ except FileNotFoundError as e:
 
 except UnknownExtension as e:
     print(f"format not supported: {e.ext} format")
+
+except KeyError as e:
+    if e.args[0] == "AOC_SESSION":
+        print(f"{FAIL_COLOUR}Environment variable AOC_SESSION is not properly set")

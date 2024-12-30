@@ -1,6 +1,7 @@
 import fileinput
+from collections.abc import Callable
 from copy import copy
-from typing import Callable, Literal, NamedTuple
+from typing import Literal, NamedTuple
 
 
 class Vector(NamedTuple):
