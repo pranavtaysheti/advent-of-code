@@ -25,7 +25,7 @@
 		{
 			"type": "shell",
 			"label": "AOC Run",
-			"command": "python",
+			"command": "${command:python.interpreterPath}",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},

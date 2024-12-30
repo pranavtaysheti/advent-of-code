@@ -87,10 +87,10 @@ parser.add_argument("-p", "--file", help="runs file on given path", type=str)
 
 args = parser.parse_args()
 
-with open(".env") as env_file:  # Set Environment
-    for line in env_file:
-        key, value = line.split("=", 1)
-        os.environ[key] = value
+# with open(".env") as env_file:  # Set Environment
+#     for line in env_file:
+#         key, value = line.split("=", 1)
+#         os.environ[key] = value
 
 try:
     if args.file:

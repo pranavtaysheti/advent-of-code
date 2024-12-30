@@ -68,3 +68,4 @@ _*
 main_*
 
 .env
+.envrc
