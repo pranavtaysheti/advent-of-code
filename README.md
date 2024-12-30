@@ -2,8 +2,8 @@
 
 ## Code should work on
 
-Python >= 3.13
-Go >= 1.23
+- Python >= 3.13
+- Go >= 1.23
 
 ## Usage
 
