@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -25,7 +26,46 @@ type warehouse struct {
 	cursor       [2]int
 }
 
-func (w warehouse) check(i int) (elems [][2]int, moves bool) {
+func (w warehouse) clone() state {
+	clonedFloor := make([][]rune, len(w.floor))
+	for i, r := range w.floor {
+		clonedFloor[i] = slices.Clone(r)
+	}
+
+	return state{
+		instructions: w.instructions,
+		floor:        clonedFloor,
+		cursor:       w.cursor,
+	}
+}
+
+func (w warehouse) solve() state {
+	state := w.clone()
+	for i := range len(state.instructions) {
+		state.move(i)
+	}
+
+	return state
+}
+
+func (w warehouse) expand() expandedState {
+	clonedFloor := make([][]rune, len(w.floor))
+	for i := range len(clonedFloor) {
+		clonedFloor[i] = make([]rune, len(w.floor[i])*2)
+
+		//TODO
+	}
+
+	return expandedState{
+		instructions: w.instructions,
+		floor:        clonedFloor,
+		cursor:       [2]int{w.cursor[0] * 2, w.cursor[1] * 2},
+	}
+}
+
+type state warehouse
+
+func (w state) check(i int) (elems [][2]int, moves bool) {
 	vec := vector[w.instructions[i]]
 
 	curr := addVector(w.cursor, vec)
@@ -44,7 +84,7 @@ func (w warehouse) check(i int) (elems [][2]int, moves bool) {
 	return
 }
 
-func (w *warehouse) move(i int) {
+func (w *state) move(i int) {
 	elems, moves := w.check(i)
 	if !moves {
 		return
@@ -61,7 +101,7 @@ func (w *warehouse) move(i int) {
 	w.cursor = addVector(w.cursor, vector[w.instructions[i]])
 }
 
-func (w warehouse) gpsScore() (res int) {
+func (w state) gpsScore() (res int) {
 	for i, row := range w.floor {
 		for j, c := range row {
 			if c == 'O' {
@@ -72,6 +112,8 @@ func (w warehouse) gpsScore() (res int) {
 
 	return
 }
+
+type expandedState warehouse
 
 var data = warehouse{}
 
@@ -100,11 +142,7 @@ func parse(r io.Reader) {
 func main() {
 	parse(os.Stdin)
 
-	for i := range len(data.instructions) {
-		data.move(i)
-	}
-
-	P1 := data.gpsScore()
+	P1 := data.solve().gpsScore()
 	P2 := 0
 
 	fmt.Printf("P1: %d\n", P1)
