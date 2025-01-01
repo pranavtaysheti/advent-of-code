@@ -52,8 +52,17 @@ func (w warehouse) expand() expandedState {
 	clonedFloor := make([][]rune, len(w.floor))
 	for i := range len(clonedFloor) {
 		clonedFloor[i] = make([]rune, len(w.floor[i])*2)
+		curr := clonedFloor[i]
 
-		//TODO
+		for j, r := range w.floor[i] {
+			switch r {
+			case 'O':
+				curr[j*2], curr[j*2+1] = '[', ']'
+			default:
+				curr[j*2], curr[j*2+1] = r, r
+			}
+
+		}
 	}
 
 	return expandedState{
@@ -115,6 +124,23 @@ func (w state) gpsScore() (res int) {
 
 type expandedState warehouse
 
+func (w expandedState) check(i int) (elems [][2]int, moves bool) {
+	vec := vector[w.instructions[i]]
+
+	// next := func(pos [][2]int) [][2]int {
+	// 	switch {
+	// 	case vec[0] == 0:
+	// 		return [][2]int{addVector(w.cursor, vec)}
+	// 	case vec[1] == 0:
+
+	// 	}
+	// }
+}
+
+func (w expandedState) move(i int) {
+	// TODO
+}
+
 var data = warehouse{}
 
 func parse(r io.Reader) {
@@ -145,6 +171,7 @@ func main() {
 	P1 := data.solve().gpsScore()
 	P2 := 0
 
+	data.expand()
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
 }
