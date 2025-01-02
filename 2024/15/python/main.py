@@ -85,31 +85,31 @@ class ExpandedState(State):
         self.cursor = cursor[0], cursor[1] * 2
         self.box = "[]"
 
+    def check_tree(self, ins: str) -> list[set[int]] | None:
+        c_row, _ = VECTORS[ins]
+
+        elems: list[set[int]] = [{self.cursor[1]}]
+        z_row = self.cursor[0] + c_row
+        while len(elems[-1]) > 0:
+            next_elems = set()
+
+            for c in elems[-1]:
+                match (self.layout[z_row][c]):
+                    case "[":
+                        next_elems.add(c + 1)
+                        next_elems.add(c)
+                    case "]":
+                        next_elems.add(c - 1)
+                        next_elems.add(c)
+                    case "#":
+                        return None
+
+            elems.append(next_elems)
+            z_row += c_row
+
+        return elems[:-1]
+
     def solve(self):
-        def check_tree() -> list[set[int]] | None:
-            nonlocal ins
-
-            elems: list[set[int]] = [{col}]
-            z_row = f_row
-            while len(elems[-1]) > 0:
-                next_elems = set()
-
-                for c in elems[-1]:
-                    match (v := self.layout[z_row][c]):
-                        case "[":
-                            next_elems.add(c + 1)
-                            next_elems.add(c)
-                        case "]":
-                            next_elems.add(c - 1)
-                            next_elems.add(c)
-                        case "#":
-                            return None
-
-                elems.append(next_elems)
-                z_row += c_row
-
-            return elems[:-1]
-
         for ins in instructions:
             row, col = self.cursor
             c_row, c_col = VECTORS[ins]
@@ -128,7 +128,7 @@ class ExpandedState(State):
                                 self.layout[row][c] = "]"
 
                 case "^" | "v":
-                    elems = check_tree()
+                    elems = self.check_tree(ins)
                     if elems is None:
                         continue
 
