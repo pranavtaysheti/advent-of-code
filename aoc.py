@@ -31,6 +31,7 @@ class EnvVarError(KeyError): ...
 class LangValue(NamedTuple):
     command: list[str]
     extension: str
+    dir_module: bool = False
 
 
 class LangInfo(dict[str, LangValue]):
@@ -47,7 +48,7 @@ class LangInfo(dict[str, LangValue]):
 lang_info = LangInfo(
     {
         "python": LangValue(["python"], "py"),
-        "go": LangValue(["go", "run"], "go"),
+        "go": LangValue(["go", "run"], "go", True),
     }
 )
 
@@ -83,9 +84,16 @@ def aoc_run(code_path: str, year: str, day: str, norun: bool = False):
     input_path = download_input(year, day)
 
     if not norun:
-        command = lang_info.file_lang(code_path).command
+        info = lang_info.file_lang(code_path)
+
+        if info.dir_module:
+            dir_path = "/".join(code_path.split("/")[:-1])
+            code_glob = [f"{dir_path}/{f}" for f in os.listdir(dir_path)]
+        else:
+            code_glob = [code_path]
+
         with open(input_path, "r") as input_file:
-            subprocess.run([*command, code_path], stdin=input_file)
+            subprocess.run([*info.command, *code_glob], stdin=input_file)
 
 
 parser = argparse.ArgumentParser()
