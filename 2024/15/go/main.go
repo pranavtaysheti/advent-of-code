@@ -33,19 +33,13 @@ func (w warehouse) clone() state {
 	}
 
 	return state{
-		instructions: w.instructions,
-		floor:        clonedFloor,
-		cursor:       w.cursor,
+		warehouse: warehouse{
+			instructions: w.instructions,
+			floor:        clonedFloor,
+			cursor:       w.cursor,
+		},
+		box: "O",
 	}
-}
-
-func (w warehouse) solve() state {
-	state := w.clone()
-	for i := range len(state.instructions) {
-		state.move(i)
-	}
-
-	return state
 }
 
 func (w warehouse) expand() expandedState {
@@ -66,13 +60,30 @@ func (w warehouse) expand() expandedState {
 	}
 
 	return expandedState{
-		instructions: w.instructions,
-		floor:        clonedFloor,
-		cursor:       [2]int{w.cursor[0] * 2, w.cursor[1] * 2},
+		state: state{
+			warehouse: warehouse{
+				instructions: w.instructions,
+				floor:        clonedFloor,
+				cursor:       [2]int{w.cursor[0] * 2, w.cursor[1] * 2},
+			},
+			box: "[]",
+		},
 	}
 }
 
-type state warehouse
+type state struct {
+	warehouse
+	box string
+}
+
+func (w warehouse) solve() state {
+	state := w.clone()
+	for i := range len(state.instructions) {
+		state.move(i)
+	}
+
+	return state
+}
 
 func (w state) check(i int) (elems [][2]int, moves bool) {
 	vec := vector[w.instructions[i]]
@@ -122,10 +133,12 @@ func (w state) gpsScore() (res int) {
 	return
 }
 
-type expandedState warehouse
+type expandedState struct {
+	state
+}
 
 func (w expandedState) check(i int) (elems [][2]int, moves bool) {
-	vec := vector[w.instructions[i]]
+	// vec := vector[w.instructions[i]]
 
 	// next := func(pos [][2]int) [][2]int {
 	// 	switch {
@@ -134,7 +147,10 @@ func (w expandedState) check(i int) (elems [][2]int, moves bool) {
 	// 	case vec[1] == 0:
 
 	// 	}
+
 	// }
+
+	return
 }
 
 func (w expandedState) move(i int) {
