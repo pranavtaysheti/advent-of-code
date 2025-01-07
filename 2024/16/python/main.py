@@ -47,8 +47,11 @@ class Solver:
 
     def move(self) -> Item:
         item = heapq.heappop(self.heap)
-        self.seen.add((item.pos, item.dir % 2))
 
+        if (item.pos, item.dir % 2) in self.seen:
+            return item
+
+        self.seen.add((item.pos, item.dir % 2))
         row, col = item.pos
 
         for dir, (c_row, c_col) in VECTORS.items():
