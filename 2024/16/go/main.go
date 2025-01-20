@@ -32,11 +32,12 @@ type node struct {
 }
 
 type state struct {
-	PriorityQueue[node]
+	priorityQueue[node]
+	seen map[[3]int]struct{}
 }
 
 func initState() state {
-	initHeap := PriorityQueue[node]{Item[node]{
+	initHeap := priorityQueue[node]{Item[node]{
 		cost: 0,
 		item: &node{
 			direction: dEast,
@@ -44,12 +45,12 @@ func initState() state {
 		},
 	}}
 
-	heap.Init(&initHeap)
-	return state{initHeap}
+	return state{initHeap, map[[3]int]struct{}{}}
 }
 
 func (s *state) move() {
-	next := s.Pop()
+	next := heap.Pop(s).(Item[node])
+
 	// TODO: Find next moves
 }
 
