@@ -101,14 +101,7 @@ class Solver:
     def steps(self):
         return set(chain.from_iterable(self._history[self.end_pos]))
 
-    def print_steps(self):
-        res = [[c for c in r] for r in data]
-        for row, col in self.steps():
-            res[row][col] = "O"
-
-        print("\n".join("".join(c for c in r) for r in res))
-
 
 solver = Solver()
 print(f"P1: {solver.solve()[0].cost}")
-print(f"P2: {len(solver.steps())}")
+print(f"P2: {len(solver.steps())+1}")
