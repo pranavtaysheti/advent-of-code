@@ -61,7 +61,7 @@ _deps
 
 __pycache__/
 main
-example.txt
+tests/
 input.txt
 
 _*

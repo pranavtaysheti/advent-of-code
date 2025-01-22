@@ -34,6 +34,24 @@
 			],
 			"detail": "Downloads input.txt from AOC website",
 			"problemMatcher": []
-		}
+		},
+		{
+			"type": "shell",
+			"label": "AOC Test",
+			"command": "${command:python.interpreterPath}",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"args": [
+				"aoc.py",
+				"-p",
+				"${relativeFile}",
+				"-t",
+			],
+			"group": {
+				"kind": "test",
+			},
+			"detail": "Tests file using aoc.py runner"
+		},
 	]
 }

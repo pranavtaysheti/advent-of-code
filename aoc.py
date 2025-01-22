@@ -25,9 +25,6 @@ class UnknownExtension(ValueError):
         super().__init__()
 
 
-class EnvVarError(KeyError): ...
-
-
 class LangValue(NamedTuple):
     command: list[str]
     extension: str
@@ -77,23 +74,34 @@ def download_input(year: str, day: str) -> str:
     return input_path
 
 
+def aoc_test(code_path: str, year: str, day: str):
+    print(f"Testing: {code_path}")
+
+    test_path = INPUT_PATH_FORMAT.format(year=year, day=day) + "/tests/"
+    for test_file in os.listdir(test_path):
+        print(f"Running test: {test_file}")
+        run_code(code_path, test_path + test_file)
+
+
 def aoc_run(code_path: str, year: str, day: str, norun: bool = False):
-    with open(code_path):
-        print(f"Running: {code_path}")
+    print(f"Running: {code_path}")
 
     input_path = download_input(year, day)
-
     if not norun:
-        info = lang_info.file_lang(code_path)
+        run_code(code_path, input_path)
 
-        if info.dir_module:
-            dir_path = "/".join(code_path.split("/")[:-1])
-            code_glob = [f"{dir_path}/{f}" for f in os.listdir(dir_path)]
-        else:
-            code_glob = [code_path]
 
-        with open(input_path, "r") as input_file:
-            subprocess.run([*info.command, *code_glob], stdin=input_file)
+def run_code(code_path: str, input_path: str):
+    info = lang_info.file_lang(code_path)
+
+    if info.dir_module:
+        dir_path = "/".join(code_path.split("/")[:-1])
+        code_glob = [f"{dir_path}/{f}" for f in os.listdir(dir_path)]
+    else:
+        code_glob = [code_path]
+
+    with open(input_path, "r") as input_file:
+        subprocess.run([*info.command, *code_glob], stdin=input_file)
 
 
 parser = argparse.ArgumentParser()
@@ -104,7 +112,9 @@ parser.add_argument("-p", "--file", help="runs file on given path", type=str)
 parser.add_argument(
     "-n", "--norun", help="only downloads input, doesnt run", action="store_true"
 )
-
+parser.add_argument(
+    "-t", "--test", help="runs with test input from ./tests/*", action="store_true"
+)
 args = parser.parse_args()
 
 if ".env" in os.listdir(os.curdir):
@@ -132,7 +142,11 @@ try:
 
             year, day = args.year, args.day
 
-    aoc_run(args.file, year, day, args.norun)
+    if args.test:
+        aoc_test(args.file, year, day)
+
+    else:
+        aoc_run(args.file, year, day, args.norun)
 
 except FileNotFoundError as e:
     print(f"file {e.filename} doesnt exist")
