@@ -57,7 +57,7 @@ class Solver:
     class _History(dict[Direction, tuple[int, set[Position]]]):
         def __init__(self, *args, **kwargs):
             for d in Direction:
-                self[d] = 10**6, set()
+                self[d] = 10**6, set()  # feels hacky
 
             super().__init__(*args, **kwargs)
 

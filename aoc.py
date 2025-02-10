@@ -46,6 +46,7 @@ lang_info = LangInfo(
     {
         "python": LangValue(["python"], "py"),
         "go": LangValue(["go", "run"], "go", True),
+        "zig": LangValue(["zig", "run"], "zig"),
     }
 )
 
