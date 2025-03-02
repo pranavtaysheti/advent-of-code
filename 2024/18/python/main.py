@@ -13,6 +13,7 @@ class Grid(list[list[bool]]):
             [[False for _ in range(GRID_SIZE + 1)] for _ in range(GRID_SIZE + 1)]
         )
 
+        self.data = data
         for col, row in data[:LENGTH]:
             self[row][col] = True
 
@@ -23,14 +24,15 @@ class Grid(list[list[bool]]):
     def path_find(self) -> int:
         VECTORS = [(0, +1), (0, -1), (+1, 0), (-1, 0)]
 
-        seen: set[tuple[int, int]] = set()
+        seen: set[tuple[int, int]] = set([(0, 0)])
         queue: list[tuple[int, tuple[int, int]]] = []
 
-        curr = (0, 0)
-        curr_len: int = 0
-        seen.add(curr)
+        queue.append((0, (0, 0)))
+        while queue:
+            curr_len, curr = heapq.heappop(queue)
+            if curr == (GRID_SIZE, GRID_SIZE):
+                break
 
-        while curr != (GRID_SIZE, GRID_SIZE):
             for d_row, d_col in VECTORS:
                 c_row, c_col = curr
                 n_row, n_col = c_row + d_row, c_col + d_col
@@ -43,9 +45,20 @@ class Grid(list[list[bool]]):
                     heapq.heappush(queue, (curr_len + 1, (n_row, n_col)))
                     seen.add((n_row, n_col))
 
-            curr_len, curr = heapq.heappop(queue)
+        else:
+            return -1
 
         return curr_len
+
+    def block_find(self) -> tuple[int, int]:
+        for col, row in self.data[LENGTH:]:
+            self[row][col] = True
+            if self.path_find() == -1:
+                return col, row
+
+        raise AssertionError(
+            "The path should have been blocked at some point, check input."
+        )
 
 
 data: list[tuple[int, int]] = []
@@ -55,8 +68,6 @@ with fileinput.input() as input_file:
         data.append((int(num1), int(num2)))
 
 grid = Grid(data)
-print(grid)
-print(grid.path_find())
 
-print(f"P1: {0}")
-print(f"P2: {0}")
+print(f"P1: {grid.path_find()}")
+print(f"P2: {grid.block_find()}")
