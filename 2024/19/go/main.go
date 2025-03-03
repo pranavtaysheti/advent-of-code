@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-func count[T any](s []T, fn func(e T) bool) (count int) {
-	for _, e := range s {
-		if fn(e) {
+func count(nums []int) (count int) {
+	for _, n := range nums {
+		if n > 0 {
 			count++
 		}
 	}
@@ -18,36 +18,15 @@ func count[T any](s []T, fn func(e T) bool) (count int) {
 	return count
 }
 
-func sum[T any](s []T, fn func(e T) int) (sum int) {
-	for _, e := range s {
-		sum += fn(e)
+func sum(nums []int) (sum int) {
+	for _, n := range nums {
+		sum += n
 	}
 
 	return
 }
 
 type towels []string
-
-func (t towels) check(p string) bool {
-	tabulation := make([]bool, len(p)+1)
-	tabulation[0] = true
-
-	for i := range len(p) + 1 {
-		if !tabulation[i] {
-			continue
-		}
-
-		for _, w := range t {
-			if i+len(w) <= len(p) {
-				if w == p[i:i+len(w)] {
-					tabulation[i+len(w)] = true
-				}
-			}
-		}
-	}
-
-	return tabulation[len(p)]
-}
 
 func (t towels) count(p string) int {
 	counts := make([]int, len(p)+1)
@@ -69,6 +48,7 @@ func (t towels) count(p string) int {
 
 	return counts[len(p)]
 }
+
 func parse(r io.Reader) (towels towels, patterns []string) {
 	scanner := bufio.NewScanner(r)
 
@@ -87,8 +67,13 @@ func parse(r io.Reader) (towels towels, patterns []string) {
 func main() {
 	towels, patterns := parse(os.Stdin)
 
-	P1 := count(patterns, towels.check)
-	P2 := sum(patterns, towels.count)
+	counts := make([]int, len(patterns))
+	for i, p := range patterns {
+		counts[i] = towels.count(p)
+	}
+
+	P1 := count(counts)
+	P2 := sum(counts)
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
