@@ -8,9 +8,9 @@ import (
 	"slices"
 )
 
-type disk []int
+type expandedDisk []int
 
-func expand(input []int) (d disk) {
+func expand(input []int) (d expandedDisk) {
 	size := 0
 	for _, length := range input {
 		size += length
@@ -36,15 +36,15 @@ func expand(input []int) (d disk) {
 	return
 }
 
-func (d *disk) fragment() {
+func (d *expandedDisk) fragment() {
 	curr_blank := 0
 	for i, e := range slices.Backward(*d) {
 		if e == -1 {
 			continue
 		}
 
-		for j := curr_blank; (*d)[j] != -1; j++ {
-			curr_blank = j + 1
+		for (*d)[curr_blank] != -1 {
+			curr_blank++
 		}
 
 		if i <= curr_blank {
@@ -58,7 +58,7 @@ func (d *disk) fragment() {
 	*d = (*d)[:curr_blank]
 }
 
-func (s disk) checksum() (res int) {
+func (s expandedDisk) checksum() (res int) {
 	for i, id := range s {
 		res += i * id
 	}
@@ -81,9 +81,9 @@ func parse(r io.Reader) (res []int) {
 
 func main() {
 	data := parse(os.Stdin)
+
 	diskState := expand(data)
 	diskState.fragment()
-
 	P1 := diskState.checksum()
 	P2 := 0
 
