@@ -5,28 +5,28 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 )
 
-type disk struct {
-	diskMap    []int
-	expanded   []int
-	freeSpaces []int
-}
+type disk []int
 
-var diskState = disk{}
+func expand(input []int) (d disk) {
+	size := 0
+	for _, length := range input {
+		size += length
+	}
 
-func (s *disk) expand() {
+	d = make([]int, size)
+
 	curr := 0
-
-	for i, length := range s.diskMap {
+	for i, length := range input {
 		if i%2 == 0 {
-			for range length {
-				s.expanded = append(s.expanded, i/2)
+			for j := range length {
+				d[curr+j] = i / 2
 			}
 		} else {
-			for i := range length {
-				s.expanded = append(s.expanded, -1)
-				s.freeSpaces = append(s.freeSpaces, curr+i)
+			for j := range length {
+				d[curr+j] = -1
 			}
 		}
 
@@ -36,44 +36,52 @@ func (s *disk) expand() {
 	return
 }
 
-func (s *disk) fragment() {
-	j := 0
-	for i := len(s.expanded) - 1; i > -1; i-- {
-		if j == len(s.freeSpaces) {
+func (d *disk) fragment() {
+	curr_blank := 0
+	for i, e := range slices.Backward(*d) {
+		if e == -1 {
+			continue
+		}
+
+		for j := curr_blank; (*d)[j] != -1; j++ {
+			curr_blank = j + 1
+		}
+
+		if i <= curr_blank {
 			break
 		}
 
-		pop := s.expanded[i]
-		for pop == -1 {
-			i--
-			pop = s.expanded[i]
-		}
-
-		s.expanded[s.freeSpaces[j]] = pop
-		j++
+		(*d)[curr_blank] = e
+		(*d)[i] = -1
 	}
 
-	s.expanded = s.expanded[:len(s.expanded)-len(s.freeSpaces)]
+	*d = (*d)[:curr_blank]
 }
 
-func (s *disk) checksum() (res int) {
-	for i, id := range diskState.expanded {
+func (s disk) checksum() (res int) {
+	for i, id := range s {
 		res += i * id
 	}
 
 	return
 }
 
-func parse(r io.Reader) {
-	reader := bufio.NewReader(r)
-	buf, _ := reader.ReadString('\n')
-	for _, r := range buf[:len(buf)-1] {
-		diskState.diskMap = append(diskState.diskMap, int(r)-48)
+func parse(r io.Reader) (res []int) {
+	scanner := bufio.NewScanner(r)
+	scanner.Scan()
+	input := scanner.Text()
+
+	res = make([]int, len(input))
+	for i, r := range input {
+		res[i] = int(r) - 48
 	}
+
+	return
 }
+
 func main() {
-	parse(os.Stdin)
-	diskState.expand()
+	data := parse(os.Stdin)
+	diskState := expand(data)
 	diskState.fragment()
 
 	P1 := diskState.checksum()
