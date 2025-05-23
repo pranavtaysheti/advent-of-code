@@ -69,3 +69,5 @@ main_*
 
 .env
 .envrc
+
+node_modules/
