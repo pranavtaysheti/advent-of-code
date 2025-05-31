@@ -1,4 +1,3 @@
-import { throws } from "assert";
 import { readFileSync } from "fs";
 
 class PairWise<T> {
