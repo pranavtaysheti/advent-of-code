@@ -119,12 +119,6 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-if ".env" in os.listdir(os.curdir):
-    with open(".env") as env_file:  # Set Environment
-        for line in env_file:
-            key, value = line.split("=", 1)
-            os.environ[key] = value
-
 try:
     if args.file:
         year, day = parse_year(args.file), parse_day(args.file)

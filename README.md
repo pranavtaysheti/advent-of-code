@@ -9,13 +9,11 @@
 
 1. Install `requirements.txt` python packages.
 
-2. Create a `.env` file in this folder with following content:
+2. Set environment variable as follows using `.zshrc`, `direnv`, etc
 
     ```env
     AOC_SESSION=<your "session" cookie from AoC website after you login>
     ```
-
-    Or alternively set environment variable using `.zshrc`, `direnv`, etc.
 
 3. Then run following command in terminal.
 
