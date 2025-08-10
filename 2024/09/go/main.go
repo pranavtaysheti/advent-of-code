@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/list"
 	"fmt"
 	"io"
 	"os"
@@ -66,6 +67,26 @@ func (s expandedDisk) checksum() (res int) {
 	return
 }
 
+type layout struct {
+	*list.List
+}
+
+func makeLayout(input []int) (res layout) {
+	res = layout{list.New()}
+	for i, length := range input {
+		if i%2 == 0 {
+			res.PushBack([2]int{i / 2, length})
+		} else {
+			res.PushBack([2]int{-1, length})
+		}
+	}
+
+	return
+}
+
+func (l layout) defragment() {
+}
+
 func parse(r io.Reader) (res []int) {
 	scanner := bufio.NewScanner(r)
 	scanner.Scan()
@@ -84,9 +105,6 @@ func main() {
 
 	diskState := expand(data)
 	diskState.fragment()
-	P1 := diskState.checksum()
-	P2 := 0
-
-	fmt.Printf("P1: %d\n", P1)
-	fmt.Printf("P2: %d\n", P2)
+	fmt.Printf("P1: %d\n", diskState.checksum())
+	fmt.Printf("P2: %d\n", 0)
 }
