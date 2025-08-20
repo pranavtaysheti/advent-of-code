@@ -73,26 +73,26 @@ var expansionMap = map[string]map[string]int{
 	"":    {"": 1},
 	"<":   {">>^": 1, "v<<": 1},
 	"<<":  {"": 1, ">>^": 1, "v<<": 1},
-	"<<^": {"": 1, "<": 1, ">>^": 1, "v<": 1},
-	"<<v": {"": 1, ">": 1, ">^": 1, "v<<": 1},
+	"<<^": {"": 1, ">": 1, ">^": 1, "v<<": 1},
+	"<<v": {"": 1, ">": 1, "^>": 1, "v<<": 1},
 	"<^":  {">": 1, ">^": 1, "v<<": 1},
-	"<v":  {"<": 1, ">>^": 1, "v<": 1},
+	"<v":  {">": 1, "^>": 1, "v<<": 1},
 	">":   {"^": 1, "v": 1},
 	">>":  {"": 1, "^": 1, "v": 1},
 	">>^": {"": 1, "<^": 1, ">": 1, "v": 1},
 	">>v": {"": 1, "<": 1, "^>": 1, "v": 1},
-	">^":  {"<": 1, ">v": 1, "^": 1},
+	">^":  {"<^": 1, ">": 1, "v": 1},
 	">v":  {"<": 1, "^>": 1, "v": 1},
 	"^":   {"<": 1, ">": 1},
-	"^<":  {">": 1, ">^": 1, "v<<": 1},
+	"^<":  {"<": 1, ">>^": 1, "v<": 1},
 	"^<<": {"": 1, "<": 1, ">>^": 1, "v<": 1},
-	"^>":  {"<": 1, ">v": 1, "^": 1},
-	"^>>": {"": 1, "<^": 1, ">": 1, "v": 1},
+	"^>":  {"<": 1, "^": 1, "v>": 1},
+	"^>>": {"": 1, "<": 1, "^": 1, "v>": 1},
 	"v":   {"<v": 1, "^>": 1},
-	"v<":  {"<": 1, ">>^": 1, "v<": 1},
-	"v<<": {"": 1, ">": 1, ">^": 1, "v<<": 1},
-	"v>":  {"<": 1, "^>": 1, "v": 1},
-	"v>>": {"": 1, "<": 1, "^>": 1, "v": 1},
+	"v<":  {"<": 1, "<v": 1, ">>^": 1},
+	"v<<": {"": 1, "<": 1, "<v": 1, ">>^": 1},
+	"v>":  {"<v": 1, ">": 1, "^": 1},
+	"v>>": {"": 1, "<v": 1, ">": 1, "^": 1},
 }
 
 func repeat[E any](e E, n int) iter.Seq[E] {
@@ -133,10 +133,10 @@ func expand(p parsedCommand) parsedCommand {
 	res := parsedCommand{}
 	for exp, qty := range p {
 		for exp_2, qty_2 := range expansionMap[exp] {
-			if c_qty, ok := res[exp_2]; !ok {
+			if _, ok := res[exp_2]; !ok {
 				res[exp_2] = qty * qty_2
 			} else {
-				res[exp_2] = c_qty + qty*qty_2
+				res[exp_2] += qty * qty_2
 			}
 		}
 	}
@@ -233,7 +233,6 @@ func (r *robot) buildCommand() map[command]struct{} {
 }
 
 func solve(p string, layers int) int {
-	fmt.Println("====", p, "========")
 	r := makeRobot(ktDoor, p)
 	c_comm := map[command]struct{}{}
 	for c := range r.buildCommand() {
@@ -247,7 +246,6 @@ func solve(p string, layers int) int {
 	for c := range c_comm {
 		c_exp := c.parse()
 		for range layers - 2 {
-			fmt.Println(c_exp)
 			c_exp = expand(c_exp)
 		}
 
@@ -258,11 +256,6 @@ func solve(p string, layers int) int {
 	}
 
 	return min_cost
-}
-
-func complexity(p string, l int) int {
-	num, _ := strconv.Atoi(p[:len(p)-1])
-	return num * solve(p, l)
 }
 
 var data = []string{}
@@ -279,15 +272,17 @@ func main() {
 
 	P1 := 0
 	for _, p := range data {
-		P1 += complexity(p, 3)
+		num, _ := strconv.Atoi(p[:len(p)-1])
+		P1 += num * solve(p, 3)
 	}
 
 	fmt.Printf("P1: %d\n", P1)
 
 	P2 := 0
-	// for _, p := range data {
-	// 	P2 += complexity(p, 26)
-	// }
+	for _, p := range data {
+		num, _ := strconv.Atoi(p[:len(p)-1])
+		P2 += num * solve(p, 26)
+	}
 
 	fmt.Printf("P2: %d\n", P2)
 }
