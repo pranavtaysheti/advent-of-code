@@ -9,12 +9,12 @@ import (
 )
 
 const histLen = 4
-const pruneNumber = 16777216 - 1
+const pruneNumber = 1<<24 - 1
 const snGenerated = 2000
 
-type number int
+type secretNumber int
 
-func (sn number) evolve() number {
+func (sn secretNumber) generate() secretNumber {
 	n_sn := sn << 6
 	sn = n_sn ^ sn
 	sn = sn & pruneNumber
@@ -30,20 +30,20 @@ func (sn number) evolve() number {
 	return sn
 }
 
-func (sn number) generate() []number {
-	res := make([]number, snGenerated+1)
+func (sn secretNumber) generateAll() generatedNumbers {
+	res := make([]secretNumber, snGenerated+1)
 	res[0] = sn
 	for i := range snGenerated {
-		sn = sn.evolve()
+		sn = sn.generate()
 		res[i+1] = sn
 	}
 
 	return res
 }
 
-type sellReport map[[histLen]int8]int
+type priceObservations map[[histLen]int8]int
 
-func (s sellReport) maxProfit() int {
+func (s priceObservations) maxProfit() int {
 	currMax := 0
 	for _, p := range s {
 		currMax = max(currMax, p)
@@ -52,21 +52,20 @@ func (s sellReport) maxProfit() int {
 	return currMax
 }
 
-type priceList []number
+type generatedNumbers []secretNumber
 
-func (l priceList) observe() sellReport {
+func (l generatedNumbers) observe() priceObservations {
 	curr := [histLen]int8{}
-	res := sellReport{}
+	res := priceObservations{}
 
-	//Prime the initial 4 numbers
+	//Prime the initial 4 secretNumbers
 	for i := range histLen {
 		curr[i] = int8(l[i+1]%10 - l[i]%10)
 	}
 
-	fmt.Println("PRIMED SUCCESSFULLY:", curr)
 	res[curr] = int(l[histLen] % 10)
 
-	//Rest of the numbers
+	//Rest of the secretNumbers
 	for i := range len(l) - histLen - 1 {
 		for j := range histLen - 1 {
 			curr[j] = curr[j+1]
@@ -74,37 +73,51 @@ func (l priceList) observe() sellReport {
 
 		curr[histLen-1] = int8(l[histLen+i+1]%10 - l[histLen+i]%10)
 
-		if v, ok := res[curr]; !ok {
+		if _, ok := res[curr]; !ok {
 			res[curr] = int(l[histLen+i+1] % 10)
-		} else {
-			res[curr] = v + int(l[histLen+i+1]%10)
 		}
 	}
 
 	return res
 }
 
-var numbers []number
+var secretNumbers []secretNumber
 
 func parse(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		num, _ := strconv.Atoi(scanner.Text())
-		numbers = append(numbers, number(num))
+		secretNumbers = append(secretNumbers, secretNumber(num))
 	}
 }
 
 func main() {
 	parse(os.Stdin)
 
+	allMonkeyNumbers := make([]generatedNumbers, len(secretNumbers))
+
+	for i, n := range secretNumbers {
+		allMonkeyNumbers[i] = n.generateAll()
+	}
+
 	P1 := 0
-	for _, n := range numbers {
-		generatedNumbers := n.generate()
-		P1 += int(generatedNumbers[len(generatedNumbers)-1])
+	for _, n := range allMonkeyNumbers {
+		P1 += int(n[snGenerated])
 	}
 
 	fmt.Printf("P1: %d\n", P1)
 
-	P2 := 0
+	res := priceObservations{}
+	for _, gn := range allMonkeyNumbers {
+		for hist, num := range gn.observe() {
+			if v, ok := res[hist]; !ok {
+				res[hist] = num
+			} else {
+				res[hist] = num + v
+			}
+		}
+	}
+
+	P2 := res.maxProfit()
 	fmt.Printf("P2: %d\n", P2)
 }
