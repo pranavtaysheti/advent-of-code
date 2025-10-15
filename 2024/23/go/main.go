@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 )
 
 type node [2]byte
+
+func cmpNode(n1, n2 node) int {
+	return n1.hash() - n2.hash()
+}
 
 func (n node) hash() (res int) {
 	for _, r := range n {
@@ -22,35 +26,33 @@ func (n node) hash() (res int) {
 
 type edge [2]node
 
-func (e edge) hash() int {
-	n1, n2 := e[0].hash(), e[1].hash()
-	minVal := min(n1, n2)
-	maxVal := max(n1, n2)
-
-	return (maxVal << 10) + minVal
+func makeEdge(n1, n2 node) edge {
+	res := []node{n1, n2}
+	slices.SortFunc(res, cmpNode)
+	return edge(res)
 }
 
 type triangle [3]node
 
-func (t triangle) hash() int {
-	n := []int{t[0].hash(), t[1].hash(), t[2].hash()}
-	n = sort.IntSlice(n[:])
-	return (n[0] << 20) + (n[1] << 10) + n[2]
+func makeTriangle(n1, n2, n3 node) triangle {
+	res := []node{n1, n2, n3}
+	slices.SortFunc(res, cmpNode)
+	return triangle(res)
 }
 
 type graph struct {
 	nodes        map[node]struct{}
-	edges        map[int]edge
-	triangles    map[int]triangle
-	incTriangles map[int]map[node]triangle
+	edges        map[edge]struct{}
+	triangles    map[triangle]struct{}
+	incTriangles map[edge]map[node]triangle
 }
 
 func makeGraph() graph {
 	return graph{
 		nodes:        map[node]struct{}{},
-		edges:        map[int]edge{},
-		triangles:    map[int]triangle{},
-		incTriangles: map[int]map[node]triangle{},
+		edges:        map[edge]struct{}{},
+		triangles:    map[triangle]struct{}{},
+		incTriangles: map[edge]map[node]triangle{},
 	}
 }
 
@@ -59,64 +61,61 @@ func (g *graph) add(s1 string, s2 string) {
 	g.nodes[n1] = struct{}{}
 	g.nodes[n2] = struct{}{}
 
-	newEdge := edge{n1, n2}
-	newEdgeHash := newEdge.hash()
+	newEdge := makeEdge(n1, n2)
 
-	g.edges[newEdgeHash] = newEdge
+	g.edges[newEdge] = struct{}{}
 
-	if m, ok := g.incTriangles[newEdgeHash]; ok {
+	if m, ok := g.incTriangles[newEdge]; ok {
 		for n, t := range m {
-			th := t.hash()
-			g.triangles[th] = t
+			g.triangles[t] = struct{}{}
 			delete(m, n)
 		}
 
-		delete(g.incTriangles, newEdgeHash)
+		delete(g.incTriangles, newEdge)
 	}
 
-	for _, v := range g.edges {
+	for v := range g.edges {
 		cn1, cn2 := v[0], v[1]
 		switch {
 		case n1 == cn1:
-			newTriangle := triangle{cn1, cn2, n2}
-			missingEdgeHash := edge{n2, cn2}.hash()
+			newTriangle := makeTriangle(cn1, cn2, n2)
+			missingEdge := makeEdge(n2, cn2)
 
-			_, ok := g.incTriangles[missingEdgeHash]
+			_, ok := g.incTriangles[missingEdge]
 			if !ok {
-				g.incTriangles[missingEdgeHash] = map[node]triangle{}
+				g.incTriangles[missingEdge] = map[node]triangle{}
 			}
-			g.incTriangles[missingEdgeHash][n1] = newTriangle
+			g.incTriangles[missingEdge][n1] = newTriangle
 
 		case n1 == cn2:
-			newTriangle := triangle{cn1, cn2, n2}
-			missingEdgeHash := edge{n2, cn1}.hash()
+			newTriangle := makeTriangle(cn1, cn2, n2)
+			missingEdge := makeEdge(n2, cn1)
 
-			_, ok := g.incTriangles[missingEdgeHash]
+			_, ok := g.incTriangles[missingEdge]
 			if !ok {
-				g.incTriangles[missingEdgeHash] = map[node]triangle{}
+				g.incTriangles[missingEdge] = map[node]triangle{}
 			}
-			g.incTriangles[missingEdgeHash][n1] = newTriangle
+			g.incTriangles[missingEdge][n1] = newTriangle
 
 		case n2 == cn1:
-			newTriangle := triangle{cn1, cn2, n1}
-			missingEdgeHash := edge{n1, cn2}.hash()
+			newTriangle := makeTriangle(cn1, cn2, n1)
+			missingEdge := makeEdge(n1, cn2)
 
-			_, ok := g.incTriangles[missingEdgeHash]
+			_, ok := g.incTriangles[missingEdge]
 			if !ok {
-				g.incTriangles[missingEdgeHash] = map[node]triangle{}
+				g.incTriangles[missingEdge] = map[node]triangle{}
 			}
-			g.incTriangles[missingEdgeHash][n2] = newTriangle
+			g.incTriangles[missingEdge][n2] = newTriangle
 
 		case n2 == cn2:
-			newTriangle := triangle{cn1, cn2, n1}
-			missingEdgeHash := edge{n1, cn1}.hash()
+			newTriangle := makeTriangle(cn1, cn2, n1)
+			missingEdge := makeEdge(n1, cn1)
 
-			_, ok := g.incTriangles[missingEdgeHash]
+			_, ok := g.incTriangles[missingEdge]
 			if !ok {
-				g.incTriangles[missingEdgeHash] = map[node]triangle{}
+				g.incTriangles[missingEdge] = map[node]triangle{}
 			}
-			g.incTriangles[missingEdgeHash][n2] = newTriangle
-
+			g.incTriangles[missingEdge][n2] = newTriangle
 		}
 	}
 }
@@ -134,9 +133,8 @@ func parse(r io.Reader) {
 
 func main() {
 	parse(os.Stdin)
-	fmt.Println(len(data.triangles))
 	P1 := 0
-	for _, t := range data.triangles {
+	for t := range data.triangles {
 		for _, n := range t {
 			if n[0] == 't' {
 				P1++
