@@ -74,48 +74,29 @@ func (g *graph) add(s1 string, s2 string) {
 		delete(g.incTriangles, newEdge)
 	}
 
+	addIncTriangle := func(n1, n2, n3 node) {
+		newTriangle := makeTriangle(n1, n2, n3)
+		missingEdge := makeEdge(n1, n2)
+
+		_, ok := g.incTriangles[missingEdge]
+		if !ok {
+			g.incTriangles[missingEdge] = map[node]triangle{}
+		}
+
+		g.incTriangles[missingEdge][n3] = newTriangle
+	}
+
 	for v := range g.edges {
 		cn1, cn2 := v[0], v[1]
 		switch {
 		case n1 == cn1:
-			newTriangle := makeTriangle(cn1, cn2, n2)
-			missingEdge := makeEdge(n2, cn2)
-
-			_, ok := g.incTriangles[missingEdge]
-			if !ok {
-				g.incTriangles[missingEdge] = map[node]triangle{}
-			}
-			g.incTriangles[missingEdge][n1] = newTriangle
-
+			addIncTriangle(n2, cn2, n1)
 		case n1 == cn2:
-			newTriangle := makeTriangle(cn1, cn2, n2)
-			missingEdge := makeEdge(n2, cn1)
-
-			_, ok := g.incTriangles[missingEdge]
-			if !ok {
-				g.incTriangles[missingEdge] = map[node]triangle{}
-			}
-			g.incTriangles[missingEdge][n1] = newTriangle
-
+			addIncTriangle(n2, cn1, n1)
 		case n2 == cn1:
-			newTriangle := makeTriangle(cn1, cn2, n1)
-			missingEdge := makeEdge(n1, cn2)
-
-			_, ok := g.incTriangles[missingEdge]
-			if !ok {
-				g.incTriangles[missingEdge] = map[node]triangle{}
-			}
-			g.incTriangles[missingEdge][n2] = newTriangle
-
+			addIncTriangle(n1, cn2, n2)
 		case n2 == cn2:
-			newTriangle := makeTriangle(cn1, cn2, n1)
-			missingEdge := makeEdge(n1, cn1)
-
-			_, ok := g.incTriangles[missingEdge]
-			if !ok {
-				g.incTriangles[missingEdge] = map[node]triangle{}
-			}
-			g.incTriangles[missingEdge][n2] = newTriangle
+			addIncTriangle(n1, cn1, n2)
 		}
 	}
 }
@@ -133,6 +114,7 @@ func parse(r io.Reader) {
 
 func main() {
 	parse(os.Stdin)
+
 	P1 := 0
 	for t := range data.triangles {
 		for _, n := range t {
@@ -142,6 +124,7 @@ func main() {
 			}
 		}
 	}
+
 	fmt.Printf("P1: %d\n", P1)
 
 	P2 := 0
