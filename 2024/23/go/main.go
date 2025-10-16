@@ -9,116 +9,130 @@ import (
 	"strings"
 )
 
-type node [2]byte
+type nodeName [2]byte
 
-func cmpNode(n1, n2 node) int {
-	return n1.hash() - n2.hash()
+func (n nodeName) value() (res int) {
+	return int(n[0]-96)*26 + int(n[1])
 }
 
-func (n node) hash() (res int) {
-	for _, r := range n {
-		res *= 26
-		res += int(r) - 96
+type node struct {
+	nodeName
+	connections map[*node]struct{}
+}
+
+func cmpNode(n1 *node, n2 *node) int {
+	return n1.value() - n2.value()
+}
+
+func makeNode(name nodeName) *node {
+	return &node{
+		nodeName:    name,
+		connections: map[*node]struct{}{},
+	}
+}
+
+func shapeValue(s []*node) string {
+	res := make([]byte, len(s)*2)
+	slices.SortFunc(s, cmpNode)
+	for i, n := range s {
+		res[i*2] = n.nodeName[0]
+		res[i*2+1] = n.nodeName[1]
 	}
 
-	return res
-}
-
-type edge [2]node
-
-func makeEdge(n1, n2 node) edge {
-	res := []node{n1, n2}
-	slices.SortFunc(res, cmpNode)
-	return edge(res)
-}
-
-type triangle [3]node
-
-func makeTriangle(n1, n2, n3 node) triangle {
-	res := []node{n1, n2, n3}
-	slices.SortFunc(res, cmpNode)
-	return triangle(res)
+	return string(res)
 }
 
 type graph struct {
-	nodes        map[node]struct{}
-	edges        map[edge]struct{}
-	triangles    map[triangle]struct{}
-	incTriangles map[edge]map[node]triangle
+	nodes  map[int]*node
+	shapes []map[string][]*node
 }
 
-func makeGraph() graph {
-	return graph{
-		nodes:        map[node]struct{}{},
-		edges:        map[edge]struct{}{},
-		triangles:    map[triangle]struct{}{},
-		incTriangles: map[edge]map[node]triangle{},
+func (g graph) add(ns1, ns2 string) {
+	nn1, nn2 := nodeName{ns1[0], ns1[1]}, nodeName{ns2[0], ns2[1]}
+	nv1, nv2 := nn1.value(), nn2.value()
+
+	var n1, n2 *node
+
+	if _, ok := data.nodes[nv1]; !ok {
+		n1 = makeNode(nn1)
+		data.nodes[nv1] = n1
+	} else {
+		n1 = data.nodes[nv1]
+	}
+
+	if _, ok := data.nodes[nv2]; !ok {
+		n2 = makeNode(nn2)
+		data.nodes[nv2] = n2
+	} else {
+		n2 = data.nodes[nv2]
+	}
+
+	n1.connections[n2] = struct{}{}
+	n2.connections[n1] = struct{}{}
+
+	edge := []*node{n1, n2}
+	data.shapes[0][shapeValue(edge)] = edge
+}
+
+func (g *graph) study(degree int) {
+	g.shapes = append(g.shapes, map[string][]*node{})
+
+	for _, shape := range g.shapes[degree-3] {
+		prevCommonNodes := map[*node]struct{}{}
+		for n := range shape[0].connections {
+			prevCommonNodes[n] = struct{}{}
+		}
+
+		for _, n := range shape[1:] {
+			commonNodes := map[*node]struct{}{}
+			for i := range n.connections {
+				if _, ok := prevCommonNodes[i]; ok {
+					commonNodes[i] = struct{}{}
+				}
+			}
+
+			prevCommonNodes = commonNodes
+		}
+
+		for n := range prevCommonNodes {
+			nodes := []*node{n}
+			nodes = append(nodes, shape...)
+			g.shapes[degree-2][shapeValue(nodes)] = nodes
+		}
 	}
 }
 
-func (g *graph) add(s1 string, s2 string) {
-	n1, n2 := node([]byte(s1)), node([]byte(s2))
-	g.nodes[n1] = struct{}{}
-	g.nodes[n2] = struct{}{}
-
-	newEdge := makeEdge(n1, n2)
-
-	g.edges[newEdge] = struct{}{}
-
-	if m, ok := g.incTriangles[newEdge]; ok {
-		for n, t := range m {
-			g.triangles[t] = struct{}{}
-			delete(m, n)
-		}
-
-		delete(g.incTriangles, newEdge)
-	}
-
-	addIncTriangle := func(n1, n2, n3 node) {
-		newTriangle := makeTriangle(n1, n2, n3)
-		missingEdge := makeEdge(n1, n2)
-
-		_, ok := g.incTriangles[missingEdge]
-		if !ok {
-			g.incTriangles[missingEdge] = map[node]triangle{}
-		}
-
-		g.incTriangles[missingEdge][n3] = newTriangle
-	}
-
-	for v := range g.edges {
-		cn1, cn2 := v[0], v[1]
-		switch {
-		case n1 == cn1:
-			addIncTriangle(n2, cn2, n1)
-		case n1 == cn2:
-			addIncTriangle(n2, cn1, n1)
-		case n2 == cn1:
-			addIncTriangle(n1, cn2, n2)
-		case n2 == cn2:
-			addIncTriangle(n1, cn1, n2)
-		}
+func (g *graph) solve() {
+	for i := 3; len(g.shapes[i-3]) > 0; i++ {
+		(*g).study(i)
 	}
 }
 
-var data = makeGraph()
+var data = graph{
+	nodes:  map[int]*node{},
+	shapes: []map[string][]*node{{}},
+}
 
 func parse(r io.Reader) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		nodeNames := strings.Split(scanner.Text(), "-")
-		s1, s2 := nodeNames[0], nodeNames[1]
-		data.add(s1, s2)
+		n := strings.Split(scanner.Text(), "-")
+		data.add(n[0], n[1])
 	}
 }
 
 func main() {
 	parse(os.Stdin)
+	data.solve()
 
 	P1 := 0
-	for t := range data.triangles {
-		for _, n := range t {
-			if n[0] == 't' {
+	for t := range data.shapes[1] {
+		for i, r := range t {
+			if i%2 != 0 {
+				continue
+			}
+
+			if r == 't' {
 				P1++
 				break
 			}
@@ -127,7 +141,22 @@ func main() {
 
 	fmt.Printf("P1: %d\n", P1)
 
-	P2 := 0
+	P2Raw := []string{}
+	for s := range data.shapes[len(data.shapes)-2] {
+		curr := []rune{}
+		for i, r := range s {
+			if i%2 == 0 {
+				P2Raw = append(P2Raw, string(curr))
+				curr = make([]rune, 2)
+			}
 
-	fmt.Printf("P2: %d\n", P2)
+			curr = append(curr, r)
+		}
+
+		P2Raw = append(P2Raw, string(curr))
+		break
+	}
+	
+	P2 := strings.Join(P2Raw[1:], ",")
+	fmt.Printf("P2: %v\n", P2)
 }
