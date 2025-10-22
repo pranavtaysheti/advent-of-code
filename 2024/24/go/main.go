@@ -109,7 +109,6 @@ func (c *circuit) solve() {
 			}
 		}
 
-		curr = map[*wire]struct{}{}
 		curr = nextCurr
 		if len(curr) == 0 {
 			break
