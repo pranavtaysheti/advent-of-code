@@ -32,10 +32,8 @@ func (p pattern) heightMap(spec patternType) []int {
 			}
 		}
 	case ptKey:
-		var p_rev = pattern{}
-		copy(p_rev[:], p[:])
-		slices.Reverse(p_rev[:])
-		for i, row := range p_rev {
+		for i, row := range slices.Backward(p[:]) {
+			i = patternLen - i - 1
 			for j, c := range row {
 				if c == '#' {
 					res[j] = i + 1
@@ -59,13 +57,13 @@ var data = schematics{
 
 func (s schematics) solve() (res int) {
 	for _, l := range data.locks {
-		hm_l := l.heightMap(ptLock)
+		hmLock := l.heightMap(ptLock)
 
 	key:
 		for _, k := range data.keys {
-			hm_k := k.heightMap(ptKey)
-			for i, h := range hm_k {
-				if hm_l[i]+h > patternLen {
+			hmKey := k.heightMap(ptKey)
+			for i, height := range hmKey {
+				if hmLock[i]+height > patternLen {
 					continue key
 				}
 			}
