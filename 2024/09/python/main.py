@@ -12,15 +12,13 @@ class ExpandedDisk(list[int]):
                 self.extend([-1 for _ in range(size)])
 
     def compress(self):
-        curr_blank = -1
+        curr_blank = 0
         for i, e in enumerate(reversed(self)):
             if e == -1:
                 continue
 
-            for j, c in enumerate(self[curr_blank + 1 :]):
-                if c == -1:
-                    curr_blank = curr_blank + 1 + j
-                    break
+            while self[curr_blank] != -1:
+                curr_blank += 1
 
             if len(self) - 1 - i <= curr_blank:
                 break
@@ -43,7 +41,7 @@ with fileinput.input() as input_file:
 compress_disk = ExpandedDisk(data)
 compress_disk.compress()
 print(f"P1: {compress_disk.checksum()}")
-del compress_disk
 
-
-print(f"P2: {0}")
+defragment_disk = ExpandedDisk(data)
+defragment_disk.defragement()
+print(f"P2: {defragment_disk.checksum()}")

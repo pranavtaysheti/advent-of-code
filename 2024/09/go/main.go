@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"container/list"
 	"fmt"
 	"io"
 	"os"
@@ -38,53 +37,33 @@ func expand(input []int) (d expandedDisk) {
 }
 
 func (d *expandedDisk) fragment() {
-	curr_blank := 0
+	currBlank := 0
 	for i, e := range slices.Backward(*d) {
 		if e == -1 {
 			continue
 		}
 
-		for (*d)[curr_blank] != -1 {
-			curr_blank++
+		for (*d)[currBlank] != -1 {
+			currBlank++
 		}
 
-		if i <= curr_blank {
+		if i <= currBlank {
 			break
 		}
 
-		(*d)[curr_blank] = e
+		(*d)[currBlank] = e
 		(*d)[i] = -1
 	}
 
-	*d = (*d)[:curr_blank]
+	*d = (*d)[:currBlank]
 }
 
-func (s expandedDisk) checksum() (res int) {
-	for i, id := range s {
+func (d expandedDisk) checksum() (res int) {
+	for i, id := range d {
 		res += i * id
 	}
 
 	return
-}
-
-type layout struct {
-	*list.List
-}
-
-func makeLayout(input []int) (res layout) {
-	res = layout{list.New()}
-	for i, length := range input {
-		if i%2 == 0 {
-			res.PushBack([2]int{i / 2, length})
-		} else {
-			res.PushBack([2]int{-1, length})
-		}
-	}
-
-	return
-}
-
-func (l layout) defragment() {
 }
 
 func parse(r io.Reader) (res []int) {
