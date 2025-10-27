@@ -36,7 +36,7 @@ func expand(input []int) (d expandedDisk) {
 	return
 }
 
-func (d *expandedDisk) fragment() {
+func (d *expandedDisk) compress() {
 	currBlank := 0
 	for i, e := range slices.Backward(*d) {
 		if e == -1 {
@@ -58,8 +58,53 @@ func (d *expandedDisk) fragment() {
 	*d = (*d)[:currBlank]
 }
 
+func (d *expandedDisk) defragment() {
+	trackedFile := -1
+	fileStop, fileLen := -1, 0
+	for i, e := range slices.Backward(*d) {
+		if e == -1 {
+			continue
+		}
+
+		if e == trackedFile {
+			fileLen++
+			continue
+		}
+
+		blankStart, blankLen := -1, 0
+		for j, c := range (*d)[:fileStop-fileLen+2] {
+			if c == -1 {
+				if blankStart == -1 {
+					blankStart = j
+				}
+
+				blankLen++
+				continue
+			}
+
+			if blankLen >= fileLen {
+				for k := range fileLen {
+					(*d)[blankStart+k] = trackedFile
+					(*d)[fileStop-k] = -1
+				}
+
+				break
+			}
+
+			blankStart, blankLen = -1, 0
+		}
+
+		trackedFile = e
+		fileStop, fileLen = i, 1
+	}
+}
+
 func (d expandedDisk) checksum() (res int) {
 	for i, id := range d {
+		if id == -1 {
+			continue
+		}
+
 		res += i * id
 	}
 
@@ -82,8 +127,11 @@ func parse(r io.Reader) (res []int) {
 func main() {
 	data := parse(os.Stdin)
 
-	diskState := expand(data)
-	diskState.fragment()
-	fmt.Printf("P1: %d\n", diskState.checksum())
-	fmt.Printf("P2: %d\n", 0)
+	compressState := expand(data)
+	compressState.compress()
+	fmt.Printf("P1: %d\n", compressState.checksum())
+
+	deframentState := expand(data)
+	deframentState.defragment()
+	fmt.Printf("P2: %d\n", deframentState.checksum())
 }
