@@ -41,35 +41,38 @@ with fileinput.input() as input_file:
         data.append(line[:-1])
 
 
+class _Item(NamedTuple):
+    cost: int
+    pos: Position
+    dir: Direction
+
+
+class _Seen(set[tuple[Position, Orientation]]):
+    def is_seen(self, pos: Position, dir: Direction) -> bool:
+        return (pos, Orientation.get_orientation(dir)) in self
+
+    def add_dir(self, pos, dir: Direction):
+        self.add((pos, Orientation.get_orientation(dir)))
+
+
+class _History(dict[Direction, tuple[int, set[Position]]]):
+    def __init__(self, *args, **kwargs):
+        for d in Direction:
+            self[d] = 10**6, set()  # feels hacky
+
+        super().__init__(*args, **kwargs)
+
+
 class Solver:
-    class _Item(NamedTuple):
-        cost: int
-        pos: Position
-        dir: Direction
-
-    class _Seen(set[tuple[Position, Orientation]]):
-        def is_seen(self, pos: Position, dir: Direction) -> bool:
-            return (pos, Orientation.get_orientation(dir)) in self
-
-        def add_dir(self, pos, dir: Direction):
-            self.add((pos, Orientation.get_orientation(dir)))
-
-    class _History(dict[Direction, tuple[int, set[Position]]]):
-        def __init__(self, *args, **kwargs):
-            for d in Direction:
-                self[d] = 10**6, set()  # feels hacky
-
-            super().__init__(*args, **kwargs)
-
     def __init__(self):
         s_pos = len(data) - 2, 1
-        n_item = self._Item(cost=0, pos=s_pos, dir=Direction.EAST)
+        n_item = _Item(cost=0, pos=s_pos, dir=Direction.EAST)
 
         self.end_pos = 1, len(data[1]) - 2
-        self._heap: list[Solver._Item] = [n_item]
-        self._seen = self._Seen()
-        self._history: dict[Position, Solver._History] = {
-            s_pos: self._History(
+        self._heap: list[_Item] = [n_item]
+        self._seen = _Seen()
+        self._history: dict[Position, _History] = {
+            s_pos: _History(
                 {
                     Orientation.VERTICAL: (0, set()),
                     Orientation.HORIZONTAL: (0, set()),
@@ -97,9 +100,9 @@ class Solver:
             next_items.append((dir, n_pos, n_cost))
 
         for dir, n_pos, n_cost in next_items:
-            heapq.heappush(self._heap, self._Item(n_cost, n_pos, dir))
+            heapq.heappush(self._heap, _Item(n_cost, n_pos, dir))
 
-            n_data = self._history.setdefault(n_pos, self._History())
+            n_data = self._history.setdefault(n_pos, _History())
             ne_cost, _ = n_data[dir.opp_dir()]
 
             if n_cost < ne_cost:
