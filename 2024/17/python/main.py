@@ -122,7 +122,6 @@ with fileinput.input() as input_file:
     )
 
     input_file.readline()
-
     program = [int(s) for s in input_file.readline().split()[1].split(",")]
 
     vm = VirtualMachine(program, regs)
