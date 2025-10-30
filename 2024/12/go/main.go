@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/bits"
 	"os"
+	"slices"
 )
 
 type fenceType uint
@@ -30,10 +31,38 @@ var vectors = map[fenceType][2]int{
 
 type region map[[2]int]fenceType
 
-func (r region) fencingCost() (area int, perimeter int) {
+func (r region) peri() (res int) {
 	for _, fenceType := range r {
-		area++
-		perimeter += fenceType.count()
+		res += fenceType.count()
+	}
+
+	return
+}
+
+func (r region) sides() (res int) {
+	vals := make([]uint, 0, 4*len(r))
+	for pos, fence := range r {
+		for _, ft := range []fenceType{ftVerLeft, ftVerRight} {
+			if (ft & fence) > 0 {
+				vals = append(vals, uint(ft<<16)+uint(pos[1]<<8)+uint(pos[0]))
+			}
+		}
+
+		for _, ft := range []fenceType{ftHorBottom, ftHorTop} {
+			if (ft & fence) > 0 {
+				vals = append(vals, uint(ft<<16)+uint(pos[0]<<8)+uint(pos[1]))
+			}
+		}
+	}
+
+	slices.Sort(vals)
+
+	var prev uint = 0
+	for _, v := range vals {
+		if v-prev != 1 {
+			res++
+		}
+		prev = v
 	}
 
 	return
@@ -41,7 +70,7 @@ func (r region) fencingCost() (area int, perimeter int) {
 
 type farm [][]rune
 
-func (f farm) solve() (cost int) {
+func (f farm) solve() (res []region) {
 	seen := make([][]bool, len(f))
 	for i := range len(seen) {
 		seen[i] = make([]bool, len(f[i]))
@@ -50,13 +79,12 @@ func (f farm) solve() (cost int) {
 	for i, line := range f {
 		for j := range line {
 			if seen[i][j] == false {
-				region := f.fill([2]int{i, j})
-				for pos := range region {
+				reg := f.fill([2]int{i, j})
+				for pos := range reg {
 					seen[pos[0]][pos[1]] = true
 				}
 
-				area, perimeter := region.fencingCost()
-				cost += area * perimeter
+				res = append(res, reg)
 			}
 		}
 	}
@@ -122,8 +150,21 @@ func main() {
 	data := parse(os.Stdin)
 	farm := farm(data)
 
-	P1 := farm.solve()
+	P1 := 0
+	for _, reg := range farm.solve() {
+		area := len(reg)
+		peri := reg.peri()
+
+		P1 += area * peri
+	}
+
 	P2 := 0
+	for _, reg := range farm.solve() {
+		area := len(reg)
+		sides := reg.sides()
+
+		P2 += area * sides
+	}
 
 	fmt.Printf("P1: %d\n", P1)
 	fmt.Printf("P2: %d\n", P2)
