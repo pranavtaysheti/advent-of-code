@@ -47,7 +47,7 @@ lang_info = LangInfo(
         "python": LangValue(["python"], "py"),
         "go": LangValue(["go", "run"], "go", True),
         "zig": LangValue(["zig", "run"], "zig"),
-        "typescript": LangValue(["node", "--import=tsx"], "ts"),
+        "typescript": LangValue(["deno"], "ts"),
     }
 )
 
