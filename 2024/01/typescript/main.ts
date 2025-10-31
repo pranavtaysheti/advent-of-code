@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 
-let data: [Array<number>, Array<number>] = [[], []]
+const data: [Array<number>, Array<number>] = [[], []]
 for (const line of readFileSync(0, { "encoding": "utf-8" }).split("\n")) {
     const [l0, l1] = line.split("   ")
     data[0].push(parseInt(l0))

@@ -39,7 +39,7 @@ type gate struct {
 }
 
 type circuit struct {
-	initState []*wire
+	initState map[string]*wire
 	wires     map[*wire]struct{}
 	zScore    int
 }
@@ -99,7 +99,7 @@ func (c *circuit) solve() {
 				}
 
 				num, _ := strconv.Atoi(string(w.name[1:]))
-				data.zScore |= (1 << num)
+				c.zScore |= (1 << num)
 
 				continue
 			}
@@ -116,12 +116,23 @@ func (c *circuit) solve() {
 	}
 }
 
-var data = circuit{
-	initState: []*wire{},
-	wires:     map[*wire]struct{}{},
-}
+// func (c circuit) check(num int) (mis []*wire) {
+// 	makeName := func(r rune, i int) string {
+// 		return string(r) + strconv.Itoa(num)
+// 	}
 
-func parse(r io.Reader) {
+// 	x := c.initState[makeName('x', num)]
+// 	y := c.initState[makeName('y', num)]
+
+// 	return
+// }
+
+func parse(r io.Reader) (c circuit) {
+	c = circuit{
+		initState: make(map[string]*wire),
+		wires:     make(map[*wire]struct{}),
+	}
+
 	scanner := bufio.NewScanner(r)
 	seenWires := map[string]*wire{}
 
@@ -140,8 +151,8 @@ func parse(r io.Reader) {
 			state: wireState(state),
 		}
 
-		data.initState = append(data.initState, &newWire)
-		data.wires[&newWire] = struct{}{}
+		c.initState[name] = &newWire
+		c.wires[&newWire] = struct{}{}
 		seenWires[name] = &newWire
 	}
 
@@ -173,7 +184,7 @@ func parse(r io.Reader) {
 					state: wsNone,
 				}
 
-				data.wires[wires[i]] = struct{}{}
+				c.wires[wires[i]] = struct{}{}
 				seenWires[wn] = wires[i]
 			} else {
 				wires[i] = w
@@ -187,13 +198,15 @@ func parse(r io.Reader) {
 		wires[1].output = append(wires[1].output, &newGate)
 		wires[2].input = &newGate
 	}
+
+	return
 }
 
 func main() {
-	parse(os.Stdin)
+	circuit := parse(os.Stdin)
 
-	data.solve()
-	P1 := data.zScore
+	circuit.solve()
+	P1 := circuit.zScore
 	P2 := 0
 
 	fmt.Printf("P1: %d\n", P1)
