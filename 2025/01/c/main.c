@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "libaoc/VLA.h"
 
 const int DIAL_LEN = 100;
+const int DIAL_START = 50;
 
 enum Dir { dNone, dRight, dLeft };
 typedef enum Dir Dir;
@@ -53,10 +55,9 @@ int parse(VLA* out) {
 }
 
 int rotateDial(VLA* data, int* out) {
-    int curr = 50;
+    int curr = DIAL_START;
     for (int i = 0; i < data->len; i++) {
-        Ins cIns;
-        at(data, i, &cIns);
+        Ins cIns = ((Ins*)data->array)[i];
 
         switch (cIns.dir) {
         case dRight:
@@ -67,8 +68,9 @@ int rotateDial(VLA* data, int* out) {
             break;
         }
 
+        out[(i + 1) * 2 + 1] = curr;
         curr = ((curr % DIAL_LEN) + DIAL_LEN) % DIAL_LEN;
-        out[i] = curr;
+        out[(i + 1) * 2] = curr;
     }
 
     return 0;
@@ -78,26 +80,38 @@ int main() {
     VLA data;
     parse(&data);
 
-    int rotEnds[data.len];
+    int* rotEnds = malloc(sizeof(int) * ((data.len + 1) * 2));
+    rotEnds[0] = DIAL_START;
+    rotEnds[1] = DIAL_START;
+
     rotateDial(&data, rotEnds);
 
     int P1 = 0;
     for (int i = 0; i < data.len; i++) {
-        if (rotEnds[i] == 0) {
+        if (rotEnds[i * 2] == 0) {
             P1++;
         }
     }
 
     printf("P1: %d \n", P1);
 
-    int P2 = 0;
-    for (int i = 0; i < data.len - 1; i++) {
-        if (rotEnds[i] * rotEnds[i + 1] <= 0) {
-            P2++;
+    int P2 = P1;
+    for (int i = 0; i < data.len; i++) {
+        int nach = rotEnds[(i + 1) * 2 + 1];
+        int vor = rotEnds[i * 2];
+
+        Dir cDir = ((Ins*)data.array)[i].dir;
+        switch (cDir) {
+        case dRight:
+            P2 += (nach - 1) / DIAL_LEN - vor / DIAL_LEN;
+            break;
+        case dLeft:
+            P2 += (vor - 1 + 100 * DIAL_LEN) / DIAL_LEN -
+                  (nach + 100 * DIAL_LEN) / DIAL_LEN;
+            break;
         }
     }
 
     printf("P2: %d \n", P2);
-
     return 0;
 }

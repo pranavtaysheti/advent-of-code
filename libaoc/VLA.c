@@ -7,7 +7,6 @@
 
 #include "VLA.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,28 +46,6 @@ int add(VLA* vla, void* elem) {
     char* base = (char*)vla->array;
     memcpy(base + (vla->len * vla->elemSize), elem, vla->elemSize);
     vla->len++;
-    return 0;
-}
-
-int insert(VLA* vla, int idx, void* elem) {
-    if (vla->len <= idx || idx < 0) {
-        fprintf(stderr, "insert: Index out of bound.");
-        return 3;
-    }
-
-    char* base = (char*)vla->array;
-    memcpy(base + (vla->elemSize * idx), elem, vla->elemSize);
-    return 0;
-}
-
-int at(VLA* vla, int idx, void* out) {
-    if (idx >= vla->len) {
-        fprintf(stderr, "at: Index out of bound.");
-        return 3;
-    }
-
-    char* base = (char*)vla->array;
-    memcpy(out, base + (vla->elemSize * idx), vla->elemSize);
     return 0;
 }
 
