@@ -53,5 +53,37 @@
 			},
 			"detail": "Tests file using aoc.py runner"
 		},
+        {
+            "type": "shell",
+            "label": "C build file",
+            "command": "/home/linuxbrew/.linuxbrew/bin/clang", // Adjust this path if clang++ is located elsewhere
+            "args": [
+                "-static",
+                "-nostdinc",
+                "-isystem",
+                "./musl/include/",
+                "-I",
+                "./libaoc-c/",
+                "-L",
+                "./musl/lib/libc.a",
+                "./libaoc-c/*.c",
+				"${file}",
+				"-o",
+				"${fileDirname}/${fileBasenameNoExtension}.bin"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc" // Clang often uses a compatible problem matcher
+            ],
+            "group": {
+                "kind": "build",
+            },
+			"presentation": {
+				"reveal": "never",
+			},
+            "detail": "Builds C file using clang+musl"
+        }
 	]
 }

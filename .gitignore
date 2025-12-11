@@ -71,3 +71,6 @@ main_*
 .envrc
 
 node_modules/
+
+*.bin
+musl/

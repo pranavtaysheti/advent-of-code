@@ -1,12 +1,13 @@
 import argparse
 import os
 import subprocess
-from typing import NamedTuple
+import sys
+from typing import Literal, NamedTuple
 
 import requests
 
-FAIL_COLOUR = "\033[91m"
-
+BIN_FILE = "main.bin"
+# TODO: Make it portable
 CODE_PATH_FORMAT = "{year}/{day}/{lang}/main.{ext}"
 INPUT_PATH_FORMAT = "{year}/{day}/"
 
@@ -19,14 +20,14 @@ def parse_day(p: str) -> str:
     return p.split("/")[-3]
 
 
-class UnknownExtension(ValueError):
+class UnhandledFileError(ValueError):
     def __init__(self, ext: str):
         self.ext = ext
         super().__init__()
 
 
 class LangValue(NamedTuple):
-    command: list[str]
+    command: list[str] | Literal["bin"]
     extension: str
     dir_module: bool = False
 
@@ -39,7 +40,7 @@ class LangInfo(dict[str, LangValue]):
             if ext == v.extension:
                 return v
 
-        raise UnknownExtension(ext)
+        raise UnhandledFileError(ext)
 
 
 lang_info = LangInfo(
@@ -48,6 +49,7 @@ lang_info = LangInfo(
         "go": LangValue(["go", "run"], "go", True),
         "zig": LangValue(["zig", "run"], "zig"),
         "typescript": LangValue(["deno"], "ts"),
+        "c": LangValue("bin", "c"),
     }
 )
 
@@ -96,14 +98,21 @@ def aoc_run(code_path: str, year: str, day: str, norun: bool = False):
 def run_code(code_path: str, input_path: str):
     info = lang_info.file_lang(code_path)
 
-    if info.dir_module:
-        dir_path = "/".join(code_path.split("/")[:-1])
-        code_glob = [f"{dir_path}/{f}" for f in os.listdir(dir_path)]
+    if info.command == "bin":
+        command = [os.path.join(os.path.dirname(code_path), BIN_FILE)]
+        code_glob = []
+
     else:
-        code_glob = [code_path]
+        if info.dir_module:
+            dir_path = os.path.dirname(code_path)
+            code_glob = [f"{dir_path}/{f}" for f in os.listdir(dir_path)]
+        else:
+            code_glob = [code_path]
+
+        command = info.command
 
     with open(input_path, "r") as input_file:
-        subprocess.run([*info.command, *code_glob], stdin=input_file)
+        subprocess.run([*command, *code_glob], stdin=input_file)
 
 
 parser = argparse.ArgumentParser()
@@ -145,11 +154,11 @@ try:
         aoc_run(args.file, year, day, args.norun)
 
 except FileNotFoundError as e:
-    print(f"file {e.filename} doesnt exist")
+    print(f"file {e.filename} doesnt exist", file=sys.stderr)
 
-except UnknownExtension as e:
-    print(f"format not supported: {e.ext} format")
+except UnhandledFileError as e:
+    print(f"format not supported: {e.ext} format", file=sys.stderr)
 
 except KeyError as e:
     if e.args[0] == "AOC_SESSION":
-        print(f"{FAIL_COLOUR}Environment variable AOC_SESSION is not properly set")
+        print("Environment variable AOC_SESSION is not properly set", file=sys.stderr)
