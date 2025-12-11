@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libaoc/VLA.h"
+#include "VLA.h"
 
 const int DIAL_LEN = 100;
 const int DIAL_START = 50;
