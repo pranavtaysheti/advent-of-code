@@ -4,6 +4,7 @@
 
 - Python >= 3.14
 - Go >= 1.25
+- C (I used clang 21 + musl, defaults)
 
 ## Stars Collected
 
@@ -30,3 +31,9 @@
    ```
 
 It will automatically download the input file.
+
+## Credits
+
+This project uses code from following projects:
+
+- https://github.com/tidwall/hashmap.c by Josh Baker

@@ -56,16 +56,16 @@
         {
             "type": "shell",
             "label": "C build file",
-            "command": "/home/linuxbrew/.linuxbrew/bin/clang", // Adjust this path if clang++ is located elsewhere
+            "command": "/home/linuxbrew/.linuxbrew/bin/clang", 
             "args": [
                 "-static",
                 "-nostdinc",
                 "-isystem",
-                "./musl/include/",
+                "~/musl/include/",
                 "-I",
                 "./libaoc-c/",
                 "-L",
-                "./musl/lib/libc.a",
+                "~/musl/lib/libc.a",
                 "./libaoc-c/*.c",
 				"${file}",
 				"-o",

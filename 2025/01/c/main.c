@@ -19,36 +19,21 @@ int parse(VLA* out) {
     makeVLA(sizeof(Ins), 10, out);
 
     Dir cDir = dNone;
-    int cRot = 0;
-    int cCol = 0;
+    int cRot;
     char cChar;
 
-    while ((cChar = getchar()) != EOF) {
-        if (cChar == '\n') {
-            add(out, &(Ins){cDir, cRot});
+    while (scanf("%c%d\n", &cChar, &cRot) == 2) {
+        switch (cChar) {
+        case 'R':
+            cDir = dRight;
+            break;
 
-            cRot = 0;
-            cDir = dNone;
-            cCol = 0;
-            continue;
+        case 'L':
+            cDir = dLeft;
+            break;
         }
 
-        if (cCol == 0) {
-            switch (cChar) {
-            case 'R':
-                cDir = dRight;
-                break;
-
-            case 'L':
-                cDir = dLeft;
-                break;
-            }
-        } else {
-            cRot *= 10;
-            cRot += cChar - 48;
-        }
-
-        cCol++;
+        appendVLA(out, &(Ins){cDir, cRot});
     }
 
     return 0;

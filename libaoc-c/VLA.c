@@ -30,7 +30,7 @@ int makeVLA(size_t elemSize, int initCap, VLA* out) {
 }
 
 // Note: the array member of VLA may get reallocated. when element is added
-int add(VLA* vla, void* elem) {
+int appendVLA(VLA* vla, void* elem) {
     if (vla->len == vla->cap) {
         void* newArray = realloc(vla->array, (vla->cap * 2) * (vla->elemSize));
         if (newArray == NULL) {
@@ -49,7 +49,7 @@ int add(VLA* vla, void* elem) {
     return 0;
 }
 
-void del(VLA* vla) {
+void delVLA(VLA* vla) {
     free(vla->array);
     vla->array = NULL;
     vla->len = 0;

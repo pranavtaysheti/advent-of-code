@@ -8,7 +8,7 @@ struct VLA {
 typedef struct VLA VLA;
 
 int makeVLA(size_t elemSize, int initCap, VLA* out);
-int add(VLA* vla, void* elem);
+int appendVLA(VLA* vla, void* elem);
 int insert(VLA* vla, int pos, void* elem);
 int at(VLA* vla, int idx, void* out);
 void del(VLA* vla);
