@@ -6,11 +6,8 @@
 const int DIAL_LEN = 100;
 const int DIAL_START = 50;
 
-enum Dir { dNone, dRight, dLeft };
-typedef enum Dir Dir;
-
 struct Ins {
-    Dir dir;
+    char dir;
     int rot;
 };
 typedef struct Ins Ins;
@@ -18,22 +15,10 @@ typedef struct Ins Ins;
 int parse(VLA* out) {
     makeVLA(sizeof(Ins), 10, out);
 
-    Dir cDir = dNone;
-    int cRot;
+    Ins cIns;
     char cChar;
-
-    while (scanf("%c%d\n", &cChar, &cRot) == 2) {
-        switch (cChar) {
-        case 'R':
-            cDir = dRight;
-            break;
-
-        case 'L':
-            cDir = dLeft;
-            break;
-        }
-
-        appendVLA(out, &(Ins){cDir, cRot});
+    while (scanf("%c%d\n", &cIns.dir, &cIns.rot) == 2) {
+        appendVLA(out, &cIns);
     }
 
     return 0;
@@ -45,10 +30,10 @@ int rotateDial(VLA* data, int* out) {
         Ins cIns = ((Ins*)data->array)[i];
 
         switch (cIns.dir) {
-        case dRight:
+        case 'R':
             curr += cIns.rot;
             break;
-        case dLeft:
+        case 'L':
             curr -= cIns.rot;
             break;
         }
@@ -85,12 +70,12 @@ int main() {
         int nach = rotEnds[(i + 1) * 2 + 1];
         int vor = rotEnds[i * 2];
 
-        Dir cDir = ((Ins*)data.array)[i].dir;
+        char cDir = ((Ins*)data.array)[i].dir;
         switch (cDir) {
-        case dRight:
+        case 'R':
             P2 += (nach - 1) / DIAL_LEN - vor / DIAL_LEN;
             break;
-        case dLeft:
+        case 'L':
             P2 += (vor - 1 + 100 * DIAL_LEN) / DIAL_LEN -
                   (nach + 100 * DIAL_LEN) / DIAL_LEN;
             break;
