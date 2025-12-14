@@ -25,5 +25,5 @@ int main() {
     VLA data;
     parse(&data);
 
-        return 0;
+    return 0;
 }

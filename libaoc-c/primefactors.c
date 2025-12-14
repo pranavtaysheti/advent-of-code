@@ -5,17 +5,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define DIVIDE_REPEATED(num, factor) \
-    {                                \
-        bool isFactor = false;       \
-        while (num % factor == 0) {  \
-            num /= factor;           \
-            isFactor = true;         \
-        }                            \
-                                     \
-        if (isFactor) {              \
-            (*out)[cIdx++] = factor; \
-        }                            \
+#define DIVIDE_REPEATED(factor)         \
+    {                                   \
+        if (num % factor == 0) {        \
+            (*out)[cIdx++] = factor;    \
+            while (num % factor == 0) { \
+                num /= factor;          \
+            }                           \
+        }                               \
     }
 
 size_t primeFactors(unsigned int num, int** out) {
@@ -24,10 +21,10 @@ size_t primeFactors(unsigned int num, int** out) {
     if (*out == NULL) return 0;
     int cIdx = 0;
 
-    DIVIDE_REPEATED(num, 2);
+    DIVIDE_REPEATED(2);
 
     for (int i = 3; (unsigned long long)(i * i) <= num; i += 2) {
-        DIVIDE_REPEATED(num, i);
+        DIVIDE_REPEATED(i);
     }
 
     if (num > 1) {
