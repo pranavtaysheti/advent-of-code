@@ -1,4 +1,5 @@
 import fileinput
+from collections.abc import Callable
 from typing import NamedTuple, Self
 
 
@@ -17,54 +18,54 @@ class IDRange(NamedTuple):
 
         return res, min_digits
 
-    def fake_ids(self) -> set[int]:
+    def fake_ids(self, look_len_selector: Callable[[int], list[int]]) -> set[int]:
         res: set[int] = set()
-
-        def do_subrange(look_len: int):
-            r_min, r_max = int(str(n1)[:look_len]), int(str(n2)[:look_len])
-            for e in range(r_min, r_max + 1):
-                if n1 <= (c_id := int(str(e) * (curr_len // look_len))) <= n2:
-                    res.add(c_id)
 
         parts, min_len = self.seperate()
         for curr_len, (n1, n2) in enumerate(parts, min_len):
-            if curr_len % 2 != 0:
-                continue
+            for look_len in look_len_selector(curr_len):
+                r_min, r_max = int(str(n1)[:look_len]), int(str(n2)[:look_len])
+                for e in range(r_min, r_max + 1):
+                    if n1 <= (c_id := int(str(e) * (curr_len // look_len))) <= n2:
+                        res.add(c_id)
 
-            do_subrange(curr_len // 2)
             curr_len += 1
 
-        print(res)
         return res
 
 
-# def prime_factors(num: int) -> list[int]:
-#     res: list[int] = []
+def prime_factors(num: int) -> list[int]:
+    res: list[int] = []
 
-#     if num % 2 == 0:
-#         res.append(2)
-#         while num % 2 == 0:
-#             num //= 2
+    if num % 2 == 0:
+        res.append(2)
+        while num % 2 == 0:
+            num //= 2
 
-#     i = 3
-#     while i * i <= num:
-#         if num % i == 0:
-#             res.append(i)
-#             while num % i == 0:
-#                 num //= i
-#             i += 2
+    i = 3
+    while i * i <= num:
+        if num % i == 0:
+            res.append(i)
+            while num % i == 0:
+                num //= i
+            i += 2
 
-#     if num > 1:
-#         res.append(i)
+    if num > 1:
+        res.append(num)
 
-#     return res
+    return res
 
 
 def parse() -> list[IDRange]:
-    pairs = fileinput.input().readline()[:-1].split(",")
+    pairs = fileinput.input().readline().split(",")
     return [IDRange(int(n1), int(n2)) for p in pairs for n1, n2 in [p.split("-")]]
 
 
 if __name__ == "__main__":
     data = parse()
-    print(f"P1: {sum(id for idr in data for id in idr.fake_ids())}")
+
+    P1_selector = lambda l: [l // 2] if l % 2 == 0 else []
+    print(f"P1: {sum(id for idr in data for id in idr.fake_ids(P1_selector))}")
+
+    P2_selector = lambda l: [l // f for f in prime_factors(l)]
+    print(f"P2: {sum(id for idr in data for id in idr.fake_ids(P2_selector))}")
