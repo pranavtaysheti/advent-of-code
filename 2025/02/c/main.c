@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "VLA.h"
+#include "hashmap.h"
 #include "primefactors.h"
 
 struct IDRange {
@@ -39,7 +40,7 @@ int splitRange(IDRange* idr, IDRange** out) {
         unsigned int maxCurrRange =
             (maxNumCurrDigits < idr->end) ? maxNumCurrDigits : idr->end;
 
-        size_t oIdx = digits - minDigits;
+        size_t oIdx = cDigits - minDigits;
         (*out)[oIdx] = (IDRange){curr, maxCurrRange};
 
         curr = ++maxCurrRange;
