@@ -23,7 +23,15 @@ def parse_day(p: str) -> str:
 class UnhandledFileError(ValueError):
     def __init__(self, ext: str):
         self.ext = ext
-        super().__init__()
+        super().__init__(ext)
+
+
+class UndefinedSessionError(KeyError): ...
+
+
+class SessionPermissionError(ValueError):
+    def __init__(self, resp_code: int) -> None:
+        super().__init__(resp_code)
 
 
 class LangValue(NamedTuple):
@@ -56,12 +64,16 @@ lang_info = LangInfo(
 
 def download_input(year: str, day: str) -> str:
     def get_input() -> str:
+        if (session := os.getenv("AOC_SESSION", None)) is None:
+            raise UndefinedSessionError
+
         response = requests.get(
             url=f"https://adventofcode.com/{year}/day/{day.lstrip("0")}/input",
-            cookies={
-                "session": os.environ["AOC_SESSION"],
-            },
+            cookies={"session": session},
         )
+
+        if not response.ok:
+            raise SessionPermissionError(response.status_code)
 
         return str(response.content, encoding="utf8")
 
@@ -159,6 +171,8 @@ except FileNotFoundError as e:
 except UnhandledFileError as e:
     print(f"format not supported: {e.ext} format", file=sys.stderr)
 
-except KeyError as e:
-    if e.args[0] == "AOC_SESSION":
-        print("Environment variable AOC_SESSION is not properly set", file=sys.stderr)
+except UndefinedSessionError:
+    print("Environment variable AOC_SESSION is not properly set", file=sys.stderr)
+
+except SessionPermissionError:
+    print("Your session cookie maybe outdated. Please change.", file=sys.stderr)

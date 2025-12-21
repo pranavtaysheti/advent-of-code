@@ -1,5 +1,6 @@
 import fileinput
 from collections.abc import Callable
+from math import log10
 from typing import NamedTuple, Self
 
 
@@ -10,7 +11,7 @@ class IDRange(NamedTuple):
     def seperate(self) -> tuple[list[Self], int]:
         res: list[Self] = []
 
-        min_digits, max_digits = len(str(self.start)), len(str(self.end))
+        min_digits, max_digits = int(log10(self.start)) + 1, int(log10(self.end)) + 1
         curr = self.start
         for digits in range(min_digits, max_digits + 1):
             res.append(type(self)(curr, min(10**digits - 1, self.end)))

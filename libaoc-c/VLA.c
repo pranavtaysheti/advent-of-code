@@ -5,13 +5,16 @@
 // 2 -> size of elem to add to list does not match
 // 3 -> invalid position
 
+// In general, this library is VERY Quick and Dirty.
+// EXTREMELY unsafe and for this project's use only.
+
 #include "VLA.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int makeVLA(size_t elemSize, int initCap, VLA* out) {
+VLA_Error makeVLA(size_t elemSize, size_t initCap, VLA* out) {
     *out = (VLA){
         .elemSize = elemSize,
         .len = 0,
@@ -30,15 +33,16 @@ int makeVLA(size_t elemSize, int initCap, VLA* out) {
 }
 
 // Note: the array member of VLA may get reallocated. when element is added
-int appendVLA(VLA* vla, void* elem) {
+VLA_Error appendVLA(VLA* vla, void* elem) {
     if (vla->len == vla->cap) {
-        void* newArray = realloc(vla->array, (vla->cap * 2) * (vla->elemSize));
+        size_t newCap = (vla->cap == 0) ? 1 : vla->cap * 2;
+        void* newArray = realloc(vla->array, newCap * (vla->elemSize));
         if (newArray == NULL) {
             fprintf(stderr, "add: malloc for newArray failed.");
             return 1;
         }
 
-        int newCap = (vla->cap == 0) ? 1 : vla->cap * 2;
+        free(vla->array);
         vla->cap = newCap;
         vla->array = newArray;
     }
@@ -49,9 +53,27 @@ int appendVLA(VLA* vla, void* elem) {
     return 0;
 }
 
+// Safety warning: its assumned src->elemSize == dest->elemSize
+VLA_Error extendVLA(VLA* dest, VLA* src) {
+    if (src->elemSize != dest->elemSize) {
+        return 2;
+    }
+
+    for (size_t i = 0; i < src->len; i++) {
+        int err = appendVLA(dest, (src->array) + (i * src->elemSize));
+        if (err > 0) {
+            fprintf(stderr, "extendVLA: error appending to dest VLA.");
+            return err;
+        }
+    }
+
+    return 0;
+}
+
 void delVLA(VLA* vla) {
     free(vla->array);
     vla->array = NULL;
     vla->len = 0;
     vla->cap = 0;
+    vla->elemSize = 0;
 }
