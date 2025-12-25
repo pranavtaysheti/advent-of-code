@@ -36,7 +36,7 @@ def parse2(ri: list[str]) -> list[Problem]:
     curr_nums: list[int] = []
     curr_oper: str = ""
     sub_no: int = 0
-    for i in range(max(len(ri[0]), len(ri[1]), len(ri[2]), len(ri[3]))):
+    for i in range(max([len(ri[y]) for y in range(len(ri))])):
         col = "".join([ri[y][i] for y in range(len(ri))])
 
         if all([(lambda x: x == " ")(c) for c in col]):
