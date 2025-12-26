@@ -1,5 +1,4 @@
 import fileinput
-from functools import cache
 from typing import Iterable, Literal
 
 type Cell = Literal["^"] | int
@@ -8,6 +7,8 @@ type Cell = Literal["^"] | int
 class Room:
     def __init__(self, inp: Iterable[str]):
         self.curr = 0
+        self.splits: list[int] | None = None
+        self.is_processed = False
 
         def rep(c) -> Cell:
             match c:
@@ -18,7 +19,7 @@ class Room:
                 case "S":
                     return 1
 
-            raise AssertionError("Input Data has errors")
+            assert False, "Input data has errors"
 
         data: list[list[Cell]] = [[rep(c) for c in l] for l in inp]
         self._data = data
@@ -31,27 +32,47 @@ class Room:
             if not isinstance(prev, int):
                 continue
 
+            next_row = self._data[self.curr + 1]
+
             if curr == "^":
                 if i > 0:
-                    self._data[self.curr + 1][i + 1] += prev
+                    n_cell = next_row[i + 1]
+                    assert isinstance(n_cell, int)
+
+                    next_row[i + 1] = n_cell + prev
                 if i < len(self._data[self.curr + 1]) - 1:
-                    self._data[self.curr + 1][i - 1] += prev
+                    n_cell = next_row[i - 1]
+                    assert isinstance(n_cell, int)
+
+                    next_row[i - 1] = n_cell + prev
 
                 splits += 1
 
             else:
-                self._data[self.curr + 1][i] += prev
+                n_cell = next_row[i]
+                assert isinstance(n_cell, int)
+
+                next_row[i] = n_cell + prev
 
         self.curr += 1
         return splits
 
-    @cache
-    def process(self) -> list[int]:
-        return [self.process_line() for _ in range(len(self._data) - 1)]
+    def process(self):
+        if self.is_processed:
+            return
+
+        self.splits = [self.process_line() for _ in range(len(self._data) - 1)]
+        self.is_processed = True
 
     def count_timelines(self):
         self.process()
-        return sum(c for c in self._data[-1])
+
+        res: int = 0
+        for c in self._data[-1]:
+            assert isinstance(c, int)
+            res += c
+
+        return res
 
 
 def parse() -> Room:
@@ -60,5 +81,9 @@ def parse() -> Room:
 
 if __name__ == "__main__":
     data = parse()
-    print(f"P1: {sum(i for i in data.process())}")
+    data.process()
+
+    assert data.splits is not None
+    print(f"P1: {sum(i for i in data.splits)}")
+
     print(f"P2: {data.count_timelines()}")
