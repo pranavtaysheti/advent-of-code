@@ -36,22 +36,16 @@ class Room:
 
             if curr == "^":
                 if i > 0:
-                    n_cell = next_row[i + 1]
-                    assert isinstance(n_cell, int)
-
+                    assert isinstance(n_cell := next_row[i + 1], int)
                     next_row[i + 1] = n_cell + prev
-                if i < len(self._data[self.curr + 1]) - 1:
-                    n_cell = next_row[i - 1]
-                    assert isinstance(n_cell, int)
-
+                if i < len(next_row) - 1:
+                    assert isinstance(n_cell := next_row[i - 1], int)
                     next_row[i - 1] = n_cell + prev
 
                 splits += 1
 
             else:
-                n_cell = next_row[i]
-                assert isinstance(n_cell, int)
-
+                assert isinstance(n_cell := next_row[i], int)
                 next_row[i] = n_cell + prev
 
         self.curr += 1

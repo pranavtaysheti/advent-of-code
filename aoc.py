@@ -7,7 +7,7 @@ from typing import Literal, NamedTuple
 import requests
 
 BIN_FILE = "main.bin"
-# TODO: Make it portable
+# TODO: Make it portable, maybe use RegEx
 CODE_PATH_FORMAT = "{year}/{day}/{lang}/main.{ext}"
 INPUT_PATH_FORMAT = "{year}/{day}/"
 
