@@ -1,7 +1,7 @@
 import fileinput
 from itertools import combinations
-from math import prod, sqrt
-from typing import Iterable, NamedTuple, Sequence
+from math import prod
+from typing import Iterable, NamedTuple
 
 
 class Position(NamedTuple):
@@ -10,44 +10,59 @@ class Position(NamedTuple):
     z: int
 
 
-class Graph:
-    _nodes: dict[Position, int]
-    _sorted_pairs: Sequence[tuple[Position, Position, float]] | None
-    _curr: int
-    _sub_graphs: dict[int, set[Position]]
+type Connection = tuple[Node, Node, int]
 
+
+class Node:
+    def __init__(self, pos: Position) -> None:
+        self.pos: Position = pos
+        self.group: list[Node] = [self]
+
+
+class Graph:
     def __init__(self, pos: Iterable[Position]):
-        self._sorted_pairs = None
-        self._sub_graphs = {i: set([p]) for i, p in enumerate(pos)}
-        self._nodes = {p: i for i, p in enumerate(pos)}
-        self._curr = 0
+        self._sorted_pairs: None | list[Connection] = None
+        self._nodes: list[Node] = [Node(p) for p in pos]
+        self._curr: int = 0
+        self._groups: int = len(self._nodes)
 
     def _process(self):
-        if isinstance(self._sorted_pairs, list):
+        if self._sorted_pairs is not None:
             return
 
         self._sorted_pairs = sorted(
-            [(p1, p2, distance(p1, p2)) for p1, p2 in combinations(self._nodes, 2)],
+            [
+                (p1, p2, distance(p1.pos, p2.pos))
+                for p1, p2 in combinations(self._nodes, 2)
+            ],
             key=lambda e: e[2],
         )
 
     def _connect(self):
         assert self._sorted_pairs is not None
+        assert self._curr < len(
+            self._sorted_pairs
+        ), "Make sure you are not iterating too much"
 
-        p1, p2, _ = self._sorted_pairs[self._curr]
-        sg1, sg2 = self._nodes[p1], self._nodes[p2]
+        n1, n2, _ = self._sorted_pairs[self._curr]
         self._curr += 1
 
-        if sg1 == sg2:
+        if n1.group is n2.group:
             return
 
         else:
-            self._nodes[p1] = sg2
-            for node in self._sub_graphs[sg1]:
-                self._nodes[node] = sg2
+            if len(n1.group) < len(n2.group):
+                min_group = n1.group
+                max_group = n2.group
+            else:
+                min_group = n2.group
+                max_group = n1.group
 
-            self._sub_graphs[sg2].update(self._sub_graphs[sg1])
-            self._sub_graphs.pop(sg1)
+            max_group.extend(min_group)
+            for n in min_group:
+                n.group = max_group
+
+            self._groups -= 1
 
     def connect_for(self, lim: int):
         self._process()
@@ -60,17 +75,21 @@ class Graph:
         self._process()
         assert self._sorted_pairs is not None
 
-        while len(self._sub_graphs) > 1:
+        while self._groups > 1:
             self._connect()
 
-        return self._sorted_pairs[self._curr - 1][:2]
+        n1, n2 = self._sorted_pairs[self._curr - 1][:2]
+        return n1.pos, n2.pos
 
     def score(self):
-        return sorted([len(v) for v in self._sub_graphs.values()], reverse=True)
+        return sorted(
+            list({id(n.group): len(n.group) for n in self._nodes}.values()),
+            reverse=True,
+        )
 
 
-def distance(p1: Position, p2: Position) -> float:
-    return sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2 + (p2.z - p1.z) ** 2)
+def distance(p1: Position, p2: Position) -> int:
+    return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2 + (p2.z - p1.z) ** 2
 
 
 def parse() -> list[Position]:
