@@ -38,11 +38,7 @@ type Data = list[Bank]
 
 
 def parse() -> Data:
-    res: Data = []
-    for line in fileinput.input():
-        res.append(Bank(line[:-1]))
-
-    return res
+    return [Bank(line[:-1]) for line in fileinput.input()]
 
 
 if __name__ == "__main__":

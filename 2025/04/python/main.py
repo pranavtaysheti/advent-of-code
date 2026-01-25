@@ -36,11 +36,9 @@ class Room(list[list[bool]]):
 
 
 def parse() -> Room:
-    res = Room()
-    for line in fileinput.input():
-        res.append([True if c == "@" else False for c in line[:-1]])
-
-    return res
+    return Room(
+        [True if c == "@" else False for c in l[:-1]] for l in fileinput.input()
+    )
 
 
 if __name__ == "__main__":
