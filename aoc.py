@@ -23,15 +23,17 @@ def parse_day(p: str) -> str:
 class UnhandledFileError(ValueError):
     def __init__(self, ext: str):
         self.ext = ext
-        super().__init__(ext)
+        super().__init__()
 
 
 class UndefinedSessionError(KeyError): ...
 
 
 class SessionPermissionError(ValueError):
-    def __init__(self, resp_code: int) -> None:
-        super().__init__(resp_code)
+    def __init__(self, resp_code: int, cookie: str) -> None:
+        self.resp_code = resp_code
+        self.cookie = cookie
+        super().__init__()
 
 
 class LangValue(NamedTuple):
@@ -73,7 +75,7 @@ def download_input(year: str, day: str) -> str:
         )
 
         if not response.ok:
-            raise SessionPermissionError(response.status_code)
+            raise SessionPermissionError(response.status_code, session)
 
         return str(response.content, encoding="utf8")
 
@@ -174,5 +176,6 @@ except UnhandledFileError as e:
 except UndefinedSessionError:
     print("Environment variable AOC_SESSION is not properly set", file=sys.stderr)
 
-except SessionPermissionError:
+except SessionPermissionError as e:
     print("Your session cookie maybe outdated. Please change.", file=sys.stderr)
+    print(f"Current Cookie: {e.cookie}", file=sys.stderr)
