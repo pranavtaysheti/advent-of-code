@@ -35,7 +35,24 @@ class Machine:
 
         raise AssertionError()
 
-    def solve_sum(self) -> list[int]: ...
+    def solve_sum(self) -> list[int]:
+        # TODO: Make matrix
+        def convert(i: int) -> list[int]:
+            res = [0] * len(self._indicators)
+            for b in self._schematics[i]:
+                res[b] = 1
+
+            return res
+
+        matrix = [convert(i) for i in range(len(self._schematics))]
+        matrix.append(self._joltage)
+
+        # Reorganize the row!!
+        print(matrix)
+
+        # TODO: Gauss Elimination
+        # TODO: Back propagation
+        return []
 
 
 def parse():
@@ -54,4 +71,4 @@ def parse():
 if __name__ == "__main__":
     data = parse()
     print(f"P1: {sum(len(m.solve_toggle()) for m in data)}")
-    print(f"P2: {0}")
+    # print(f"P2: {sum(sum(m.solve_sum()) for m in data)}")
