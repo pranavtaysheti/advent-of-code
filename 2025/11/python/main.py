@@ -10,9 +10,8 @@ class Node(NamedTuple):
 
 class Graph:
     _data: dict[str, list[str]]
-    _root: Node
-    _end: Node
     _is_processed: bool
+    _nodes: dict[str, list[str]]
 
     def __init__(self, data: dict[str, list[str]]):
         self._data = data
@@ -22,17 +21,20 @@ class Graph:
         if self._is_processed:
             return
 
-        nodes: dict[str, list[str]] = {}
+        self._nodes = {}
         for n_str, con in self._data.items():
             for c in con:
                 if self._data.get(c) is None:
-                    nodes[c] = []
+                    self._nodes[c] = []
 
-            nodes[n_str] = con
+            self._nodes[n_str] = con
 
+        self._is_processed = True
+
+    def _build(self, root: str, end: str = "out") -> tuple[Node, Node]:
         @cache
         def build(n: str) -> Node:
-            n_con = nodes[n]
+            n_con = self._nodes[n]
             if not n_con:
                 res = Node(n, ())
             else:
@@ -40,22 +42,22 @@ class Graph:
 
             return res
 
-        self._end = build("out")
-        self._root = build("you")
-        self._is_processed = True
+        return build(root), build(end)
 
-    def solve(self) -> int:
+    def solve(self, start: str) -> int:
         if not self._is_processed:
             self._process()
 
+        root, end = self._build(start)
+
         @cache
         def dfs(n: Node) -> int:
-            if n is self._end:
+            if n is end:
                 return 1
 
             return sum(dfs(c) for c in n.connections)
 
-        return dfs(self._root)
+        return dfs(root)
 
 
 def parse():
@@ -64,5 +66,5 @@ def parse():
 
 if __name__ == "__main__":
     data = parse()
-    print(f"P1: {data.solve()}")
+    print(f"P1: {data.solve("you")}")
     print(f"P2: {0}")
