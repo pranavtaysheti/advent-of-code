@@ -44,18 +44,31 @@ class Graph:
 
         return build(root), build(end)
 
-    def solve(self, start: str) -> int:
+    def solve(self, start: str, path: list[str] | None = None) -> tuple[int, int, int]:
         if not self._is_processed:
             self._process()
+
+        if path is None:
+            path = []
 
         root, end = self._build(start)
 
         @cache
-        def dfs(n: Node) -> int:
+        def dfs(n: Node) -> tuple[int, int, int]:
             if n is end:
-                return 1
+                return (1, 0, 0)
 
-            return sum(dfs(c) for c in n.connections)
+            res: list[int] = [0, 0, 0]
+            for c in n.connections:
+                for i, s in enumerate(dfs(c)):
+                    res[i] += s
+
+            if n.name in path:
+                res[2] = res[1]
+                res[1] = res[0]
+                res[0] = 0
+
+            return res[0], res[1], res[2]
 
         return dfs(root)
 
@@ -66,5 +79,5 @@ def parse():
 
 if __name__ == "__main__":
     data = parse()
-    print(f"P1: {data.solve("you")}")
-    print(f"P2: {0}")
+    print(f"P1: {data.solve("you")[0]}")
+    print(f"P2: {data.solve("svr", path=["fft", "dac"])[2]}")
