@@ -10,9 +10,10 @@
 
 | Year | Stars  |
 | ---- | ------ |
-| 2025 | **50** |
-| 2024 | 38     |
-| 2023 | 16     |
+| 2025 | 21     |
+| 2024 | **50** |
+| 2023 | 38     |
+| 2022 | 16     |
 
 ## Usage
 
@@ -37,3 +38,17 @@ It will automatically download the input file.
 This project uses code from following projects:
 
 - https://github.com/tidwall/hashmap.c by Josh Baker
+
+## License
+
+GNU General Public License v3.0 or later
+
+### Notice on AI Usage
+
+Author requests that this repository and its contents not be used for:
+
+- Training machine learning or AI models
+- Dataset aggregation
+- Embedding or fine-tuning purposes
+
+Explicit written permission is required.
