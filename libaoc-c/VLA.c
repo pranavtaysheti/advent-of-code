@@ -10,6 +10,7 @@
 
 #include "VLA.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,11 +39,10 @@ VLA_Error appendVLA(VLA* vla, void* elem) {
         size_t newCap = (vla->cap == 0) ? 1 : vla->cap * 2;
         void* newArray = realloc(vla->array, newCap * (vla->elemSize));
         if (newArray == NULL) {
-            fprintf(stderr, "add: malloc for newArray failed.");
+            fprintf(stderr, "appendVLA: malloc for newArray failed.");
             return 1;
         }
 
-        free(vla->array);
         vla->cap = newCap;
         vla->array = newArray;
     }
@@ -53,7 +53,7 @@ VLA_Error appendVLA(VLA* vla, void* elem) {
     return 0;
 }
 
-// Safety warning: its assumned src->elemSize == dest->elemSize
+// Safety warning: its assumed src->elemSize == dest->elemSize
 VLA_Error extendVLA(VLA* dest, VLA* src) {
     if (src->elemSize != dest->elemSize) {
         return 2;

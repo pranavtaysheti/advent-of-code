@@ -54,37 +54,45 @@
 			"detail": "Tests file using aoc.py runner"
 		},
         {
+            "label": "Build Library",
             "type": "shell",
-            "label": "C build file",
-            "command": "/home/linuxbrew/.linuxbrew/bin/clang", 
+            "command": "clang",
             "args": [
+                "--target=x86_64-linux-musl",
+                "-c", "./libaoc-c/*.c",
+                "-I", "./libaoc-c/",
+                "-march=x86-64-v3",
+                "&&", "llvm-ar", "rcs", "libaoc.a", "*.o",
+                "&&", "rm", "*.o"
+            ],
+            "group": "none",
+            "presentation": { "reveal": "silent" },
+			"detail": "Builds the library"
+        },
+        {
+            "label": "C build file",
+            "type": "shell",
+            "command": "clang",
+            "args": [
+                "--target=x86_64-linux-musl",
                 "-static",
-				"-march=x86-64-v3",
+                "-march=x86-64-v3",
+                "-fuse-ld=lld",
                 "-nostdinc",
-                "-isystem",
-                "~/musl/include/",
-                "-I",
-                "./libaoc-c/",
-                "-L",
-                "~/musl/lib/",
-                "./libaoc-c/*.c",
-				"${file}",
-				"-o",
-				"${fileDirname}/${fileBasenameNoExtension}.bin"
+                "-isystem", "/usr/local/musl/include/",
+                "-L", "/usr/local/musl/lib/",
+                "-I", "./libaoc-c/",
+                "${file}",
+                "./libaoc.a",
+                "-o", "${fileDirname}/${fileBasenameNoExtension}.bin"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc" // Clang often uses a compatible problem matcher
-            ],
+            "dependsOn": ["Build Library"], 
+            "problemMatcher": ["$gcc"],
             "group": {
                 "kind": "build",
+                "isDefault": true
             },
-			"presentation": {
-				"reveal": "never",
-			},
-            "detail": "Builds C file using clang+musl"
+			"detail": "Compiles using clang+musl"
         }
 	]
 }
